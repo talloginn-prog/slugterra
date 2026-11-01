@@ -1,3 +1,6 @@
+import { campaignSlugArt, renderCampaignPanel } from './campaign-ui.js';
+import { CAVERNS } from './content.js';
+
 const icons = {
   sound: '<path d="m4 9 4 0 5-4v14l-5-4H4z"/><path d="M16 8c3 2 3 6 0 8m3-11c5 4 5 10 0 14"/>',
   mute: '<path d="m4 9 4 0 5-4v14l-5-4H4z"/><path d="m17 9 5 6m0-6-5 6"/>',
@@ -17,6 +20,8 @@ const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp
 // Distinct silhouettes stay recognizable at loadout size. Protoforms are soft
 // companions; Velocimorphs have the elongated, angular forms seen in flight.
 const slugArt = (slug, id = 0, morphed = false) => {
+  const campaignArt = campaignSlugArt(slug, morphed);
+  if (campaignArt) return campaignArt;
   const element = slug.element || 'fire';
   const key = `slug-${element}-${id}-${morphed ? 'velocity' : 'proto'}`;
   const color = { fire: '#f58a36', electric: '#5aa9ed', water: '#60d9de' }[element] || '#f58a36';
@@ -43,13 +48,13 @@ const slugArt = (slug, id = 0, morphed = false) => {
 
 export function createUI(actions) {
   const app = document.querySelector('#app');
-  let currentState = {}, currentDialog = null, currentMode = 'menu', dialogFocus = null, inventoryMorphed = false;
+  let currentState = {}, currentDialog = null, currentMode = 'menu', dialogFocus = null, inventoryMorphed = false, currentContext = {}, lastPanelSignature = '';
   app.innerHTML = `
     <div class="cinematic-shade"></div>
     <header class="topbar">
       <button class="brand" data-panel="help" aria-label="Slugterra game guide"><span class="brand-symbol">${icon('diamond')}</span><span><strong>SLUGTERRA</strong><small>THE LUMINOUS DEEP</small></span></button>
-      <nav class="main-nav" aria-label="Game navigation"><button class="nav-link active" data-explore>Explore <span>01</span></button><button class="nav-link" data-panel="inventory">Slug arsenal <span>02</span></button><button class="nav-link" data-panel="journal">Field journal <span>03</span></button></nav>
-      <div class="header-tools"><span class="live-label"><i></i> SINGLE PLAYER</span><button class="icon-button" id="sound-toggle" aria-label="Toggle sound">${icon('sound')}</button><button class="icon-button" data-panel="settings" aria-label="Settings">${icon('gear')}</button></div>
+      <nav class="main-nav" aria-label="Game navigation"><button class="nav-link active" data-explore>Explore <span>01</span></button><button class="nav-link" data-panel="inventory">Slug arsenal <span>02</span></button><button class="nav-link" data-panel="journal">Field journal <span>03</span></button><button class="nav-link" data-panel="atlas">Cavern atlas <span>04</span></button></nav>
+      <div class="header-tools"><span class="live-label"><i></i> SINGLE PLAYER</span><button class="icon-button mobile-atlas-button" data-panel="atlas" aria-label="Cavern atlas">${icon('compass')}</button><button class="icon-button" id="sound-toggle" aria-label="Toggle sound">${icon('sound')}</button><button class="icon-button" data-panel="settings" aria-label="Settings">${icon('gear')}</button></div>
     </header>
     <main class="menu-content" id="menu-content">
       <div class="expedition-label"><span class="tiny-cross">+</span> A SLUGSLINGER'S JOURNEY <span class="label-line"></span></div>
@@ -62,8 +67,8 @@ export function createUI(actions) {
     </main>
     <aside class="location-card menu-only"><div class="coordinates">36° N <span>/</span> 182° BELOW</div><div class="location-divider"></div><span class="eyebrow">REGION 01</span><h2>The Luminous Deep</h2><p>A forgotten cavern. An ancient pulse.</p><div class="location-tags"><span>BIOLUMINESCENT WILDS</span><span>∞ POSSIBILITIES</span></div><button class="location-map" data-panel="map">${icon('compass')} Discover the region <span>↗</span></button></aside>
     <div class="world-marker menu-only"><i></i><span>THE HEART OF THE CAVERN<small>Unknown energy signature</small></span></div>
-    <footer class="menu-footer menu-only"><div class="feature"><span class="feature-number">01</span>${icon('compass')}<div><strong>A living underworld</strong><span>Go where the glow takes you.</span></div></div><div class="feature"><span class="feature-number">02</span>${icon('bolt')}<div><strong>Small allies. Wild power.</strong><span>Three slugs. Endless possibilities.</span></div></div><div class="feature"><span class="feature-number">03</span>${icon('book')}<div><strong>Your story, below</strong><span>Answer the call of the deep.</span></div></div><div class="footer-edition">AN EXPLORABLE 3D ADVENTURE <span>v1.0 / WEB EDITION</span></div></footer>
-    <div class="game-hud" id="game-hud">
+    <footer class="menu-footer menu-only"><div class="feature"><span class="feature-number">01</span>${icon('compass')}<div><strong>A living underworld</strong><span>Go where the glow takes you.</span></div></div><div class="feature"><span class="feature-number">02</span>${icon('bolt')}<div><strong>Small allies. Wild power.</strong><span>New caverns. New companions.</span></div></div><div class="feature"><span class="feature-number">03</span>${icon('book')}<div><strong>Your story, below</strong><span>Answer the call of the deep.</span></div></div><div class="footer-edition">AN EXPLORABLE 3D ADVENTURE <span>CONNECTED CAVERNS / WEB EDITION</span></div></footer>
+    <div class="game-hud" id="game-hud"><section class="campaign-status" aria-label="Expedition status"><button data-panel="atlas" class="cavern-status-button"><span>EXPLORING</span><strong id="current-cavern-name">The Luminous Deep</strong></button><div class="campaign-status-meta"><span id="campaign-coins">◈ 100 GOLD</span><span id="campaign-checkpoint">HAVEN CHECKPOINT</span></div></section><div class="discipline-controls"><button id="slug-fu-button" data-skill="slug-fu" aria-label="Activate Guided Flight"><kbd>R</kbd><span>SLUG FU<small id="slug-fu-status">Find the Haven trainer</small></span></button><button class="skill-menu-button" data-panel="skills" aria-label="Open disciplines">✧</button></div>
       <div class="compass-bar"><span>W</span><i></i><span>NW</span><i></i><b id="heading">N</b><i></i><span>NE</span><i></i><span>E</span></div>
       <section class="vitals"><div class="player-name"><span class="player-emblem">${icon('shield')}</span><div><span>SLUGSLINGER</span><strong>THE NEW GUARDIAN</strong></div><b class="level-number" id="level-label">01</b></div><div class="vital-label"><span>VITALITY</span><strong id="health-number">100 / 100</strong></div><div class="meter health-meter"><i id="health-fill"></i></div><div class="shield-row">${icon('shield')}<div class="meter shield-meter"><i id="shield-fill"></i></div><span id="shield-number">50</span></div><div class="xp-row"><span id="xp-label">0 XP</span><div class="meter xp-meter"><i id="xp-fill"></i></div></div></section>
       <section class="quest-tracker"><div class="quest-kicker">${icon('diamond')} ACTIVE EXPEDITION <button data-panel="journal" aria-label="Open quest journal">J</button></div><h3 id="quest-title">The call of the deep</h3><p id="quest-description">Find the guardian at the waystation.</p><div class="quest-progress"><span id="quest-progress-text">EXPLORE THE CAVERN</span><i><b id="quest-fill"></b></i></div></section>
@@ -71,7 +76,7 @@ export function createUI(actions) {
       <div id="interact-prompt" class="interact-prompt" hidden><kbd>E</kbd><span></span></div>
       <div id="click-to-look" class="click-to-look">Hold right mouse and drag to look · left click to fire <span>C toggles focus · ESC releases cursor</span></div>
       <div class="loadout-wrap"><div class="loadout-label"><span>YOUR COMPANIONS</span><span>1 — 3 TO SWITCH</span></div><div id="loadout" class="loadout"></div><div class="combat-hint"><span>LEFT CLICK <b>Fire slug</b></span><i></i><span>RMB / C <b>Focus</b></span><i></i><span>SHIFT <b>Sprint</b></span></div></div>
-      <aside class="minimap-wrap"><div class="minimap-title"><span>THE LUMINOUS DEEP</span><button data-panel="map" aria-label="Open region map">M</button></div><div class="minimap-frame"><canvas id="minimap" width="160" height="160" aria-label="Region minimap"></canvas><span class="map-north">N</span></div><span class="minimap-caption">${icon('diamond')} <b id="shard-count">0 / 3</b> HEARTSHARDS</span></aside>
+      <aside class="minimap-wrap"><div class="minimap-title"><span id="minimap-cavern-name">THE LUMINOUS DEEP</span><button data-panel="map" aria-label="Open region map">M</button></div><div class="minimap-frame"><canvas id="minimap" width="160" height="160" aria-label="Region minimap"></canvas><span class="map-north">N</span></div><span class="minimap-caption">${icon('diamond')} <b id="shard-count">0 / 3</b> <span id="minimap-objective-name">HEARTSHARDS</span></span></aside>
       <div class="touch-controls"><div class="touch-movement"><button data-touch="w" aria-label="Move forward">↑</button><div><button data-touch="a" aria-label="Move left">←</button><button data-touch="s" aria-label="Move backward">↓</button><button data-touch="d" aria-label="Move right">→</button></div></div><div><button data-touch="e" aria-label="Interact">E</button><button id="touch-fire" aria-label="Fire slug">${icon('target')}</button></div></div>
     </div>
     <div id="toasts" class="toasts" aria-live="polite"></div>
@@ -89,6 +94,7 @@ export function createUI(actions) {
   $('#dialog-close').onclick = () => actions.closePanel();
   $('#dialog-backdrop').onclick = event => { if (event.target === $('#dialog-backdrop')) actions.closePanel(); };
   $('#touch-fire').onclick = () => actions.fire?.();
+  $('#slug-fu-button').onclick = () => actions.useSkill?.('slug-fu');
   app.querySelectorAll('[data-touch]').forEach(button => {
     button.onpointerdown = event => { event.preventDefault(); button.setPointerCapture(event.pointerId); if (button.dataset.touch === 'e') actions.interact?.(); else actions.touch?.(button.dataset.touch, true); };
     button.onpointerup = button.onpointercancel = () => actions.touch?.(button.dataset.touch, false);
@@ -115,12 +121,27 @@ export function createUI(actions) {
     const heading = Number(state.heading);
     if (Number.isFinite(heading)) $('#heading').textContent = ['N','NE','E','SE','S','SW','W','NW'][Math.round(((heading % 360 + 360) % 360) / 45) % 8];
     $('#level-label').textContent = String(state.level ?? 1).padStart(2, '0');
+    const cave = CAVERNS[state.currentCavern || 'luminous'] || CAVERNS.luminous;
+    $('#current-cavern-name').textContent = cave.name;
+    $('#minimap-cavern-name').textContent = (cave.shortName || cave.name).toUpperCase();
+    $('#campaign-coins').textContent = `◈ ${Math.floor(state.coins || 0)} GOLD`;
+    const checkpoint = state.checkpoint?.cavernId || 'luminous';
+    $('#campaign-checkpoint').textContent = `CHECKPOINT · ${(CAVERNS[checkpoint]?.shortName || 'Haven').toUpperCase()}`;
+    const learnedFu = state.skills?.includes('slug-fu');
+    const fuCooldown = Math.ceil(state.skillCooldowns?.['slug-fu'] || 0);
+    const fuActive = (state.activeSkills?.['slug-fu'] || 0) > 0;
+    $('#slug-fu-button').disabled = !learnedFu || fuCooldown > 0;
+    $('#slug-fu-button').classList.toggle('discipline-active', fuActive);
+    $('#slug-fu-status').textContent = !learnedFu ? 'Find the Haven trainer' : fuActive ? 'GUIDING YOUR COMPANION' : fuCooldown ? `Recovering · ${fuCooldown}s` : 'GUIDED FLIGHT READY';
     const quest = state.quest ?? {};
-    $('#quest-title').textContent = quest.title ?? 'The call of the deep';
-    $('#quest-description').textContent = quest.description ?? 'Explore the cavern.';
-    $('#quest-progress-text').textContent = quest.total ? `${quest.progress ?? 0} / ${quest.total} ${quest.stage === 'shards' ? 'HEARTSHARDS' : 'COMPLETE'}` : 'FOLLOW THE BEACON';
-    $('#quest-fill').style.width = `${quest.total ? Math.min(100, (quest.progress ?? 0) / quest.total * 100) : 8}%`;
-    $('#shard-count').textContent = `${state.shards ?? 0} / 3`;
+    const awayFromHaven = state.currentCavern && state.currentCavern !== 'luminous';
+    $('#quest-title').textContent = awayFromHaven ? `${cave.shortName || cave.name} expedition` : quest.title ?? 'The call of the deep';
+    const cavernProgress = state.cavernProgress?.[state.currentCavern] || {};
+    $('#quest-description').textContent = awayFromHaven ? cavernProgress.completed ? 'Survey recorded. Seek new companions beyond the paths, or follow a passage gate back to Haven.' : 'Clear hostiles around the survey beacon, record your expedition, and seek new companions.' : quest.description ?? 'Explore the cavern.';
+    $('#quest-progress-text').textContent = awayFromHaven ? cavernProgress.completed ? 'SURVEY RECORDED' : 'FIND THE SURVEY BEACON' : quest.total ? `${quest.progress ?? 0} / ${quest.total} ${quest.stage === 'shards' ? 'HEARTSHARDS' : 'COMPLETE'}` : 'FOLLOW THE BEACON';
+    $('#quest-fill').style.width = `${awayFromHaven ? cavernProgress.completed ? 100 : 10 : quest.total ? Math.min(100, (quest.progress ?? 0) / quest.total * 100) : 8}%`;
+    $('#shard-count').textContent = awayFromHaven ? cavernProgress.completed ? '✓' : '◇' : `${state.shards ?? 0} / 3`;
+    $('#minimap-objective-name').textContent = awayFromHaven ? cavernProgress.completed ? 'SURVEY RECORDED' : 'SURVEY BEACON' : 'HEARTSHARDS';
     $('#continue-button').hidden = !state.hasSave;
     const flight = state.flight;
     const selected = state.slugs?.[state.selectedSlug ?? 0];
@@ -147,6 +168,11 @@ export function createUI(actions) {
       app.querySelectorAll('[data-slug]').forEach(button => { button.onclick = () => actions.selectSlug(Number(button.dataset.slug)); });
     }
     $('#loading-status').classList.add('loaded');
+    if (currentDialog && ['inventory', 'atlas', 'merchant', 'trainer', 'skills', 'expedition', 'map'].includes(currentDialog)) {
+      const signature = JSON.stringify([state.currentCavern, state.coins, state.ownedSlugs, state.equippedSlugs, state.ownedBlasters, state.equippedBlaster, state.skills, Math.ceil(state.skillCooldowns?.['slug-fu'] || 0), Math.ceil(state.skillCooldowns?.mastery || 0)]);
+      if (signature !== lastPanelSignature) showDialog(currentDialog, state, currentContext, true);
+      lastPanelSignature = signature;
+    }
   }
   function setMode(mode) {
     currentMode = mode;
@@ -160,17 +186,20 @@ export function createUI(actions) {
     setTimeout(() => { element.classList.add('leaving'); setTimeout(() => element.remove(), 400); }, 4200);
   }
   function closeDialog() {
-    currentDialog = null;
+    currentDialog = null; currentContext = {}; lastPanelSignature = '';
     $('#dialog-backdrop').hidden = true;
     dialogFocus?.focus?.();
   }
-  function showDialog(kind, state = currentState) {
-    currentDialog = kind;
-    dialogFocus = document.activeElement;
+  function showDialog(kind, state = currentState, context = {}, refresh = false) {
+    currentDialog = kind; currentContext = context || {};
+    if (!refresh) dialogFocus = document.activeElement;
     const slugs = state.slugs || [];
     const panelTitle = title => `<p class="eyebrow">SLUGTERRA / FIELD SYSTEMS</p><h2 id="dialog-title">${title}</h2>`;
-    const help = `<div class="controls-grid"><div><kbd>W A S D</kbd><span>Move through the cavern</span></div><div><kbd>MOUSE</kbd><span>Look freely with cursor capture; otherwise hold right mouse and drag</span></div><div><kbd>LEFT / F</kbd><span>Fire your slug, including while holding right mouse to focus</span></div><div><kbd>RMB / C</kbd><span>Hold right mouse to focus; C toggles focus for trackpads</span></div><div><kbd>SHIFT</kbd><span>Sprint</span></div><div><kbd>SPACE</kbd><span>Jump</span></div><div><kbd>E</kbd><span>Talk, gather, and activate</span></div><div><kbd>1 · 2 · 3</kbd><span>Switch elemental companions</span></div><div><kbd>Q</kbd><span>Scan for nearby life and landmarks</span></div><div><kbd>J / M / I</kbd><span>Journal / map / slug arsenal</span></div><div><kbd>ESC</kbd><span>Pause · release cursor</span></div></div>`;
-    if (kind === 'inventory') {
+    const help = `<div class="controls-grid"><div><kbd>W A S D</kbd><span>Move through the cavern</span></div><div><kbd>MOUSE</kbd><span>Look freely with cursor capture; otherwise hold right mouse and drag</span></div><div><kbd>LEFT / F</kbd><span>Fire your slug, including while holding right mouse to focus</span></div><div><kbd>RMB / C</kbd><span>Hold right mouse to focus; C toggles focus for trackpads</span></div><div><kbd>SHIFT</kbd><span>Sprint</span></div><div><kbd>SPACE</kbd><span>Jump</span></div><div><kbd>E</kbd><span>Talk, gather, and activate</span></div><div><kbd>1 · 2 · 3</kbd><span>Switch elemental companions</span></div><div><kbd>Q</kbd><span>Scan for nearby life and landmarks</span></div><div><kbd>R</kbd><span>Activate Guided Flight after training Slug Fu</span></div><div><kbd>J / M / I</kbd><span>Journal / map / slug arsenal</span></div><div><kbd>ESC</kbd><span>Pause · release cursor</span></div></div>`;
+    const campaignPanel = renderCampaignPanel({ kind, state, context: currentContext, container: $('#dialog-content'), actions, rerender: () => showDialog(kind, currentState, currentContext, true), slugArt, morphed: inventoryMorphed, setMorphed: value => { inventoryMorphed = value; }, notify: toast });
+    if (campaignPanel) {
+      // Shared dialog focus and close controls remain the same for every panel.
+    } else if (kind === 'inventory') {
       $('#dialog-content').innerHTML = `${panelTitle('Small allies. <em>Wild power.</em>')}<p class="dialog-intro">Meet your Slugterra companions in both forms. Launch them as protoforms; at 100 mph (44.7 m/s) they transform into their powerful Velocimorph battle forms.</p><div class="morph-tabs" role="group" aria-label="Companion form"><button data-form-toggle="protoform" class="${inventoryMorphed ? '' : 'active'}" aria-pressed="${!inventoryMorphed}">Protoform <small>YOUR COMPANION</small></button><span class="morph-tab-arrow">→ 100 mph →</span><button data-form-toggle="velocimorph" class="${inventoryMorphed ? 'active' : ''}" aria-pressed="${inventoryMorphed}">Velocimorph <small>THE BATTLE FORM</small></button></div><div class="arsenal-grid ${inventoryMorphed ? 'show-velocimorph' : 'show-protoform'}">${slugs.map((slug, index) => `<button class="arsenal-card ${index === state.selectedSlug ? 'selected' : ''}" style="--slug-color:${esc(slug.color || '#83efdc')}" data-select="${index}" ${slug.unlocked === false ? 'disabled' : ''}><span class="card-index">${esc(slug.species || slug.element).toUpperCase()} / 0${index + 1}</span>${slugArt(slug, index + 10, inventoryMorphed)}<span class="element-tag">${esc(slug.element)} · ${inventoryMorphed ? 'VELOCIMORPH' : 'PROTOFORM'}</span><h3>${esc(slug.name)}</h3><p>${esc(slug.description)}</p><span class="slug-combat-stats"><span>${Math.round(slug.damage * (inventoryMorphed ? (slug.morphMultiplier || 1.6) : 1))} <small>DAMAGE</small></span><span>${inventoryMorphed ? `${slug.morphMultiplier || 1.6}×` : Math.round((slug.morphSpeed || 44.7) * 2.23694)} <small>${inventoryMorphed ? 'POWER' : 'mph MORPH'}</small></span></span><span class="card-action">${slug.unlocked === false ? 'CONTINUE YOUR QUEST TO UNLOCK' : index === state.selectedSlug ? 'EQUIPPED' : `EQUIP COMPANION ${icon('arrow')}`}</span></button>`).join('')}</div><p class="panel-footnote">A visible transformation happens in flight once a slug accelerates past 100 mph (44.7 m/s). Velocimorph hits deal 1.6× damage. Your slugs return after every shot.</p>`;
       app.querySelectorAll('[data-form-toggle]').forEach(button => { button.onclick = () => { inventoryMorphed = button.dataset.formToggle === 'velocimorph'; showDialog(kind, currentState); }; });
       app.querySelectorAll('[data-select]').forEach(button => { button.onclick = () => { actions.selectSlug(Number(button.dataset.select)); showDialog(kind, currentState); }; });
@@ -196,10 +225,11 @@ export function createUI(actions) {
         ? 'The supplied metamorphosis recording is included for all three transformation slots. Other effects use original synthesized audio unless you import a replacement. Imported files stay on this device.'
         : 'Assign your own sound clips to the matching effects below. Original synthesized effects play until you import a replacement. Imported files stay on this device.';
       const clipLabel = slot => loadedClips.has(slot) ? 'Imported clip' : failedBundledClips.has(slot) ? 'Original effect · recording unavailable' : bundledClips.has(slot) ? 'Included recording' : 'Original effect';
-      $('#dialog-content').innerHTML = `${panelTitle('Make it <em>your world.</em>')}<p class="dialog-intro">Tune your expedition. Settings are saved on this device.</p><div class="settings-list"><label><span><strong>World audio</strong><small>Ambient atmosphere and combat sounds</small></span><input id="setting-sound" type="checkbox" ${state.settings?.sound !== false ? 'checked' : ''}/></label><label><span><strong>Look sensitivity</strong><small>Adjust mouse movement speed</small></span><input id="setting-sensitivity" type="range" min="0.3" max="2" step="0.1" value="${state.settings?.sensitivity ?? 1}"/></label><label><span><strong>Visual quality</strong><small>Balance atmosphere and performance</small></span><select id="setting-quality"><option value="high" ${state.settings?.quality !== 'low' ? 'selected' : ''}>High</option><option value="low" ${state.settings?.quality === 'low' ? 'selected' : ''}>Performance</option></select></label></div><section class="audio-pack-section" aria-labelledby="audio-pack-title"><div class="audio-pack-heading"><div><p class="eyebrow">EXPEDITION SOUND LIBRARY</p><h3 id="audio-pack-title">Show audio pack</h3></div><span class="audio-pack-count">${recordingSlots.size} / ${audioSlots.length} RECORDINGS</span></div><p class="audio-pack-description">${audioDescription}</p><div class="audio-slot-grid">${audioSlots.map(([slot, label]) => `<label class="audio-slot ${loadedClips.has(slot) || bundledClips.has(slot) && !failedBundledClips.has(slot) ? 'imported' : ''}"><span><strong>${label}</strong><small data-audio-status="${slot}" title="${loadedClips.has(slot) ? 'Local replacement' : failedBundledClips.has(slot) ? 'Using the original fallback effect' : readyBundledClips.has(slot) ? 'Included recording ready' : bundledClips.has(slot) ? 'Included recording loads when audio starts' : 'Original synthesized effect'}">${clipLabel(slot)}</small></span><span class="audio-file-button">${loadedClips.has(slot) || bundledClips.has(slot) ? 'Replace' : 'Import'}<input type="file" accept="audio/*,.wav,.mp3,.ogg,.m4a,.flac" data-audio-slot="${slot}" aria-label="Import ${label.toLowerCase()} clip"/></span></label>`).join('')}</div><div class="audio-pack-footer"><span>Included transformations · local replacements support WAV, MP3, OGG and other audio</span><button id="clear-audio-pack" class="audio-clear" ${loadedClips.size ? '' : 'disabled'}>Remove imported clips</button></div></section><p class="panel-footnote">Progress is automatically saved locally. Your companions will be waiting when you return.</p>`;
+      $('#dialog-content').innerHTML = `${panelTitle('Make it <em>your world.</em>')}<p class="dialog-intro">Tune your expedition. Settings are saved on this device.</p><div class="settings-list"><label><span><strong>World audio</strong><small>Ambient atmosphere and combat sounds</small></span><input id="setting-sound" type="checkbox" ${state.settings?.sound !== false ? 'checked' : ''}/></label><label><span><strong>Look sensitivity</strong><small>Adjust mouse movement speed</small></span><input id="setting-sensitivity" type="range" min="0.3" max="2" step="0.1" value="${state.settings?.sensitivity ?? 1}"/></label><label><span><strong>Visual quality</strong><small>Balance atmosphere and performance</small></span><select id="setting-quality"><option value="ultra" ${state.settings?.quality === 'ultra' ? 'selected' : ''}>Ultra</option><option value="high" ${!['ultra', 'medium', 'low'].includes(state.settings?.quality) ? 'selected' : ''}>High</option><option value="medium" ${state.settings?.quality === 'medium' ? 'selected' : ''}>Balanced</option><option value="low" ${state.settings?.quality === 'low' ? 'selected' : ''}>Performance</option></select></label><label><span><strong>Combat challenge</strong><small>Choose a comfortable pace for your expedition</small></span><select id="setting-difficulty"><option value="easy" ${state.settings?.difficulty === 'easy' ? 'selected' : ''}>Explorer</option><option value="normal" ${!['easy', 'hard'].includes(state.settings?.difficulty) ? 'selected' : ''}>Slugslinger</option><option value="hard" ${state.settings?.difficulty === 'hard' ? 'selected' : ''}>Veteran</option></select></label></div><section class="audio-pack-section" aria-labelledby="audio-pack-title"><div class="audio-pack-heading"><div><p class="eyebrow">EXPEDITION SOUND LIBRARY</p><h3 id="audio-pack-title">Show audio pack</h3></div><span class="audio-pack-count">${recordingSlots.size} / ${audioSlots.length} RECORDINGS</span></div><p class="audio-pack-description">${audioDescription}</p><div class="audio-slot-grid">${audioSlots.map(([slot, label]) => `<label class="audio-slot ${loadedClips.has(slot) || bundledClips.has(slot) && !failedBundledClips.has(slot) ? 'imported' : ''}"><span><strong>${label}</strong><small data-audio-status="${slot}" title="${loadedClips.has(slot) ? 'Local replacement' : failedBundledClips.has(slot) ? 'Using the original fallback effect' : readyBundledClips.has(slot) ? 'Included recording ready' : bundledClips.has(slot) ? 'Included recording loads when audio starts' : 'Original synthesized effect'}">${clipLabel(slot)}</small></span><span class="audio-file-button">${loadedClips.has(slot) || bundledClips.has(slot) ? 'Replace' : 'Import'}<input type="file" accept="audio/*,.wav,.mp3,.ogg,.m4a,.flac" data-audio-slot="${slot}" aria-label="Import ${label.toLowerCase()} clip"/></span></label>`).join('')}</div><div class="audio-pack-footer"><span>Included transformations · local replacements support WAV, MP3, OGG and other audio</span><button id="clear-audio-pack" class="audio-clear" ${loadedClips.size ? '' : 'disabled'}>Remove imported clips</button></div></section><p class="panel-footnote">Progress is automatically saved locally. Your companions will be waiting when you return.</p>`;
       $('#setting-sound').onchange = event => actions.setSetting('sound', event.target.checked);
       $('#setting-sensitivity').oninput = event => actions.setSetting('sensitivity', Number(event.target.value));
       $('#setting-quality').onchange = event => actions.setSetting('quality', event.target.value);
+      $('#setting-difficulty').onchange = event => actions.setSetting('difficulty', event.target.value);
       app.querySelectorAll('[data-audio-slot]').forEach(input => {
         input.onchange = async () => {
           const file = input.files?.[0];
@@ -227,12 +257,12 @@ export function createUI(actions) {
         finally { if (currentDialog === 'settings') showDialog('settings', currentState); }
       };
     } else if (kind === 'pause') {
-      $('#dialog-content').innerHTML = `${panelTitle('Take a <em>breath.</em>')}<p class="dialog-intro">The deep can wait. Your expedition is safely saved on this device.</p><div class="pause-actions"><button class="button-primary" id="resume-game">Return to expedition ${icon('arrow')}</button><button class="button-outline" data-panel="help">Field guide</button><button class="button-outline" data-panel="settings">Settings</button><button class="button-danger" id="restart-game">Start a new expedition</button></div>`;
+      $('#dialog-content').innerHTML = `${panelTitle('Take a <em>breath.</em>')}<p class="dialog-intro">The deep can wait. Your expedition is safely saved on this device.</p><div class="pause-actions"><button class="button-primary" id="resume-game">Return to expedition ${icon('arrow')}</button><button class="button-outline" data-panel="atlas">Cavern atlas</button><button class="button-outline" data-panel="skills">Disciplines</button><button class="button-outline" data-panel="help">Field guide</button><button class="button-outline" data-panel="settings">Settings</button><button class="button-danger" id="restart-game">Start a new expedition</button></div>`;
       $('#resume-game').onclick = () => actions.resume();
       $('#restart-game').onclick = () => showDialog('restart', state);
       panelButtons();
     } else if (kind === 'restart') {
-      $('#dialog-content').innerHTML = `${panelTitle('A new <em>beginning.</em>')}<p class="dialog-intro">Starting a new expedition replaces your saved journey on this device. Your current heartshards, experience, and quest progress will be reset.</p><div class="dialog-button-row"><button class="button-primary" id="confirm-restart">Start new expedition ${icon('arrow')}</button><button class="button-outline" id="cancel-restart">Keep exploring</button></div>`;
+      $('#dialog-content').innerHTML = `${panelTitle('A new <em>beginning.</em>')}<p class="dialog-intro">Starting a new expedition replaces your saved journey on this device. Your heartshards, experience, discoveries, equipment and expedition progress will be reset. Your imported audio clips stay on this device.</p><div class="dialog-button-row"><button class="button-primary" id="confirm-restart">Start new expedition ${icon('arrow')}</button><button class="button-outline" id="cancel-restart">Keep exploring</button></div>`;
       $('#confirm-restart').onclick = () => actions.restart();
       $('#cancel-restart').onclick = () => currentMode === 'menu' ? actions.closePanel() : showDialog('pause', state);
     } else if (kind === 'victory' || kind === 'won') {
@@ -244,7 +274,7 @@ export function createUI(actions) {
       $('#guide-start').onclick = () => { if (currentMode === 'menu') actions.start(); else actions.resume(); };
     }
     $('#dialog-backdrop').hidden = false;
-    $('#game-dialog').focus();
+    if (!refresh || !document.activeElement?.isConnected || document.activeElement === document.body) $('#game-dialog').focus({ preventScroll: refresh });
   }
   return {
     setMode, update, toast, showDialog, closeDialog,

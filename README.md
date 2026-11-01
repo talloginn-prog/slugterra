@@ -1,10 +1,10 @@
 # Slugterra: The Luminous Deep
 
-A playable, first-person 3D Slugterra-inspired cavern RPG built with Three.js. Explore a bioluminescent underworld, team up with Burpy, Joules, and AquaBeek, recover the lost heartshards, and defeat the Hollow Warden to bring the light back to Haven.
+A playable, first-person 3D Slugterra-inspired cavern RPG built with Three.js. Travel between the original Luminous Deep expedition, Dark Spores Cavern, and Pyrite Cavern. Discover companions, equip three slugs, trade for blasters, train guided Slug Fu, and explore distinct underground environments. The complete Haven heartshard quest and Hollow Warden ending remain playable.
 
 The handmade procedural models distinguish each species and its battle form: Infurnus has an orange body, yellow belly, and flame crest; Tazerling has a blue body with yellow lightning features; AquaBeek has a beak and aquatic fins. At speed they unfold into larger, fiercer Velocimorphs. The Eli-inspired blaster combines orange armor, gunmetal housing, a layered silver barrel and rifled bore, mechanical sights, a trigger guard, and a companion visible inside its protected glass cartridge.
 
-The environment, characters, companions, weapon, effects, and interface artwork are built in code. Audio combines original synthesis with a supplied metamorphosis recording bundled for all three slug transformations. The lush atmosphere draws broad inspiration from cinematic exploration games; no Avatar models, textures, music, or other assets are included.
+The environments, 3D characters, companions, weapons and effects are procedural. The expanded arsenal and cavern atlas also include actual source-linked Slugterra reference artwork, embedded locally for offline play. See `docs/references/verified-canon-2026-11-01.md` and `docs/references/cavern-reference-board.md` for the research and visual evidence. Audio combines original synthesis with a supplied metamorphosis recording bundled for the original and added slug transformations. The lush atmosphere draws broad inspiration from cinematic exploration games; no Avatar models, textures, music, or other assets are included.
 
 ## Run locally
 
@@ -20,7 +20,10 @@ Open the address printed by Vite in your browser. Click **Begin expedition** and
 
 ```sh
 npm test              # Game rules, persistence, physics, and mouse-input checks
-npm run test:browser  # WebGL, input, combat, ending, save restore, mobile layout
+npm run test:browser  # Original expedition: input, combat, ending, saves, mobile
+npm run test:campaign # Gates, services, collection, Slug Fu, discoveries and travel saves
+npm run test:lifecycle # Quality changes, travel cleanup and cavern surface audio
+npm run test:portable # Offline production HTML (run package:game first)
 npm run build         # Build the static application into dist/
 npm run preview       # Serve the production build locally
 npm run package:game  # Build, then refresh portable HTML and ZIP artifacts
@@ -71,12 +74,30 @@ Use the quest tracker, field journal, map, minimap, landmark labels, and echo sc
 | **E** | Speak, rest, or collect a nearby heartshard |
 | **1 / 2 / 3** | Equip Burpy / Joules / AquaBeek |
 | **Q** | Echo scan; identify the nearest remaining heartshard |
+| **R** | Activate Guided Flight after training Slug Fu |
+| **K** | Disciplines and skill recovery |
 | **J** | Field journal |
 | **M** | Region map |
 | **I** / **Tab** | Slug arsenal; inspect Protoform and Velocimorph illustrations |
 | **Esc** | Pause, release the cursor, or close a panel |
 
 Right-click aiming and left-click firing work in either press order. If pointer lock is unavailable, **hold right click and drag to turn without firing**; left-drag also turns while firing. These independent controls allow turning, aiming, and shooting together. The header buttons provide sound, settings, arsenal, and journal access. Starting a new expedition requires confirmation because it replaces the saved journey.
+
+## Connected cavern expeditions
+
+Haven has two marked passage lifts near the outpost: **Dark Spores** at `(20, 30)` and **Pyrite** at `(-20, 30)`. Approach a lift and press **E** to travel. Each destination also connects to Haven and the other cavern. Wait for a companion to return before travelling. Use **Cavern atlas** in the navigation or click the current-cavern HUD for routes and reference images.
+
+- **Dark Spores:** layered red-rimmed turquoise mushroom canopies, branching trunks, violet atmospheric depth, winding routes, a Boon Doc discovery and a guarded survey beacon.
+- **Pyrite:** blue stone terraces, monumental ruins, waterfall curtains, a Phosphoro discovery and a guarded cascade survey.
+- **Haven:** the original quest plus Mira's blaster workshop, Tala's training circle and a rescued Frostcrawler. These NPCs, the rescue placement, expedition layouts, routes and survey objectives are original RPG content.
+
+Rest at an amber checkpoint in either new cavern to restore vitality and set your return point. Defeat returns you to your checkpoint without removing collection, equipment or quest progress. Cavern visits, position, defeated encounters, discoveries and surveys persist independently; encounter and survey rewards can only be claimed once. Approach the discoveries and survey beacons after clearing nearby sentinels.
+
+The **arsenal** now separates the discovered collection from three equipped slots. The original `ember`, `volt`, `tide` companion identities and **1 / 2 / 3** controls remain. Discover Frostcrawler, Boon Doc and Phosphoro, then choose a slot in the collection. Slugs retain their recovery timer when unequipped, and an in-flight companion cannot be swapped out. New species have distinct protoform and Velocimorph models.
+
+Mira sells **Deepcore Breaker** (stronger shots, slower recovery) and **Trailrunner** (quicker recovery, less damage); your original **Haven Scout** remains owned. Tala teaches **Guided Flight** for 40 gold. Press **R** or the touch HUD button to steer the selected outward-flying companion toward your aim for four seconds; recovery takes 12 seconds. **K** opens disciplines. **Resonant Focus** requires Guided Flight and temporarily increases shot power. Prices, cooldowns and RPG prerequisites are original balancing, distinct from the sourced Slug Fu concept.
+
+Sentinels visibly charge before firing at a locked position, then enter a recovery window. Strafe during the windup, use trees and rocks as cover, or interrupt with electric/ice/light attacks. Enemies check line of sight, respect cover and return to their home encounter when pulled too far. Settings offers **Explorer**, **Slugslinger** and **Veteran** challenge levels.
 
 ## Companions and progression
 
@@ -90,7 +111,7 @@ Defeating enemies, recovering shards, and completing the quest award experience.
 
 ## Sound and recorded effects
 
-The supplied **`slugterra-metamorphosis-shot.mp3`** is bundled with the game and plays automatically when any of the three slugs transforms. No manual import is needed. The user-supplied recording is 1.824 seconds long; playback starts about 85 milliseconds in to skip its leading silence and synchronize the sound with the transformation.
+The supplied **`slugterra-metamorphosis-shot.mp3`** is bundled with the game and plays automatically when any equipped slug transforms. No manual import is needed. The user-supplied recording is 1.824 seconds long; playback starts about 85 milliseconds in to skip its leading silence and synchronize the sound with the transformation.
 
 The remaining soundscape and effects use **original synthesized audio**, including cavern ambience, blaster mechanisms, elemental shots, impacts, movement, and quest cues. No separate exact blaster or impact recordings have been supplied. Synthesis also provides fallback effects when a recorded clip is unavailable.
 
@@ -107,15 +128,15 @@ Open **Settings → Show audio pack** and assign your own recordings to any of e
 | Water impact | Water hit sound |
 | Reload / return | Companion return sound |
 
-Use a browser-supported WAV, MP3, OGG, M4A, FLAC, or other decodable audio file, **at most 8 MiB and 15 seconds per clip**. Playback priority is **a matching imported clip → the included transformation recording → the original synthesized effect**. The included recording applies to transformation slots only.
+Use a browser-supported WAV, MP3, OGG, M4A, FLAC, or other decodable audio file, **at most 8 MiB and 15 seconds per clip**. Playback priority is **a matching imported clip → the included transformation recording → the original synthesized effect**. The included recording applies to transformation slots only. Ice uses the original water sound family; healer/light companions use the electric sound family, preserving the eight existing imported override slots.
 
 Local imports stay on the device in the browser's **IndexedDB** (`slugterra-recorded-audio-v1`); that database holds user overrides only. These local imports are not uploaded, copied into source, or added to the portable ZIP. The supplied default transformation MP3 is a separate source asset embedded in the distribution. If persistent browser storage is unavailable, imports work for the current session. **Remove imported clips** restores the bundled transformation recording and the original synthesized effects for the other slots.
 
 ## Saves and performance
 
-Progress and settings are stored in this browser's `localStorage` under **`slugterra.luminous-deep.v1`**, using save format version **1**. Saves include quest progress, collected shards, level, experience, vitality, shield, position, and settings. The game saves periodically, on major events, when pausing, and when leaving. **Continue your journey** restores an existing save. Clearing browser site data removes local progress and imported audio; neither synchronizes across devices. Browsers that deny local storage can still play but cannot retain progress.
+Progress and settings use this browser's `localStorage`. The original expedition used **`slugterra.luminous-deep.v1`**, save format **1**. Saves include quest progress, collected shards, level, experience, vitality, shield, position, and settings. The game saves periodically, on major events, when pausing, and when leaving. **Continue your journey** restores an existing save. The expanded campaign saves to **`slugterra.campaign.v2`**, importing compatible version-1 progress while keeping the exact original v1 save available as a recovery copy. A malformed campaign save falls back to a valid legacy save. Collection, equipment, skills, per-cavern progress and checkpoints use the new save. A confirmed new expedition resets game progress; it does not clear imported audio. Clearing browser site data removes local progress and imported audio; neither synchronizes across devices. Browsers that deny local storage can still play but cannot retain progress.
 
-Open **Settings → Visual quality → Performance** to reduce rendering resolution on slower devices. High quality caps pixel ratio at 1.5; Performance caps it at 0.85. Sound and look sensitivity can be changed in the same panel. The world uses instanced vegetation, crystals, mushrooms, and particles, while companion models batch meshes by material to limit draw calls. Frame rate depends on the device and WebGL implementation.
+Open **Settings → Visual quality → Performance** to reduce rendering resolution on slower devices. High quality caps pixel ratio at 1.5; Performance caps it at 0.85. Ultra raises the cap to 2, uses 4096-pixel shadows and denser new-cavern detail; High uses 2048-pixel shadows. New caverns include animated plants that bend near the player. Ultra is available for the requested RTX 5060 Ti 16GB; frame rate on that GPU has not been measured in this cloud environment. Sound and look sensitivity can be changed in the same panel. The world uses instanced vegetation, crystals, mushrooms, and particles, while companion models batch meshes by material to limit draw calls. Frame rate depends on the device and WebGL implementation.
 
 ## Project layout
 
@@ -126,18 +147,22 @@ src/main.js                Renderer, combat, enemy AI, interactions, effects,
 src/models.js              Procedural Protoform/Velocimorph species and blaster
 src/physics.js             Character movement, terrain and swept collision
 src/input.js               Independent mouse buttons and pointer-lock fallback
-src/world.js               Seeded terrain, river, flora, outpost and landmarks
+src/world.js               Preserved original seeded expedition
+src/caverns.js             Connected cavern environments, routes and interactables
+src/content.js             Sourced species/cavern catalog and separate RPG tuning
+src/enemy-ai.js            Telegraphs, recovery, cover, leash and challenge rules
+src/campaign-ui.js         Atlas, collection, workshop and training panels
 src/game-state.js          Quest rules, companions, XP, vitality and save data
 src/ui.js                  Title screen, HUD, arsenal, map, journal and settings
 src/style.css              Responsive visual design and touch controls
 src/audio.js               Synthesized sound, included recording and local overrides
 src/assets/audio/
   slugterra-metamorphosis-shot.mp3
-                           Supplied default recording for all three transformations
+                           Supplied default recording for all transformations
 scripts/package-game.mjs   Self-contained HTML and dependency-free ZIP packaging
 tests/                     Game rules, physics, input, audio and browser checks
 ```
 
 ## Scope
 
-This is a self-contained, browser-playable **vertical slice** with a complete quest loop and original procedural presentation. Its world is one explorable cavern region. It is not a commercial AAA production or an adaptation of Avatar: Frontiers of Pandora. Expanded regions, cinematic voice acting, full character animation, crafting, mounts, multiplayer, and a long-form campaign remain future development work.
+This is a self-contained, browser-playable **vertical slice** with a complete quest loop and original procedural presentation. It now includes three connected explorable cavern regions. The canonical location/creature references inform original playable layouts; it does not reproduce a definitive show world map. It is not a commercial AAA production or an adaptation of Avatar: Frontiers of Pandora. Further regions, cinematic voice acting, full character animation, crafting, mounts, multiplayer, and a long-form campaign remain future development work. The verified pre-change source and supplied MP3 remain at Git branch `backup/slugterra-rpg-development-2026-11-01`, commit `48a720ce10a90731bd4f4b1c2aac0114c6196f22`.

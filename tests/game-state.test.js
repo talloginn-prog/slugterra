@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGameState, SAVE_KEY } from '../src/game-state.js';
+import { createGameState, SAVE_KEY, CAMPAIGN_SAVE_KEY } from '../src/game-state.js';
 
 function memoryStorage() {
   const map = new Map();
@@ -83,12 +83,14 @@ test('progress survives reloading with settings and a bounded player position', 
 test('corrupt, incompatible and hostile saves cannot break startup', () => {
   const storage = memoryStorage();
   for (const data of ['not-json', 'null', '[]', '{"version":2,"collected":[]}', '{"version":1}']) {
+    storage.removeItem(CAMPAIGN_SAVE_KEY); // Isolate each legacy fixture from the new campaign save.
     storage.setItem(SAVE_KEY, data);
     const game = createGameState(storage);
     assert.equal(game.hasSave(), false);
     assert.doesNotThrow(() => game.start());
     assert.equal(game.state.level, 1);
   }
+  storage.removeItem(CAMPAIGN_SAVE_KEY);
   storage.setItem(SAVE_KEY, JSON.stringify({ version: 1, collected: ['shard-west', 'shard-west', 'fake'], level: -100, health: -12, won: true, selectedSlug: 900, settings: { sensitivity: 'huge' }, position: { x: 1e99, z: 'bad' } }));
   const game = createGameState(storage);
   game.start();

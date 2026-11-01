@@ -70,19 +70,31 @@ WASD/arrows move; Shift sprint; Space jump; mouse look.
 Left click/F fires. Hold right click to aim; C toggles focus.
 Right-click aim and left-click fire can be pressed in either order.
 Without pointer lock, right-drag turns without firing; left-drag also turns.
-E speaks/rests/collects; 1/2/3 select Burpy/Joules/AquaBeek.
-Q scans; J journal; M map; I/Tab arsenal; Esc pauses/releases the cursor.
+E speaks/rests/collects/travels; 1/2/3 select your three equipped companions.
+Q scans; J journal; M map; I/Tab arsenal; R guided Slug Fu; K disciplines;
+Esc pauses/releases the cursor.
 
 EXPEDITION
 Speak to Ranger Kael at Haven. Defeat the sentinels and collect the three
 heartshards at Luminous Grove, Violet Falls and Ancient Roots. Face the Hollow
 Warden at the northern Heartstone, then return to Haven to complete the quest.
+CONNECTED CAVERNS
+Approach Haven's passage lifts to Dark Spores (20,30) and Pyrite (-20,30),
+then press E. Both destinations connect back to Haven and to each other.
+Activate amber checkpoints to choose your safe respawn point. Clear sentinels,
+record surveys and discover Boon Doc and Phosphoro. A rescued Frostcrawler
+waits near Haven's workshop. Use the collection to equip three companions.
+Visit Mira's workshop for blaster tradeoffs and Tala's circle to train Slug Fu.
+Press R to guide the selected outward-flying companion toward your aim.
+Cavern layouts, NPCs, quests, prices and RPG balance are original project design.
+The atlas and collection embed actual source-linked franchise reference art.
+
 Shots launch at 18 m/s, accelerate and morph at 100 mph (44.7 m/s). Morphed hits
 deal 1.6x damage. Each companion remains busy until it returns to the blaster.
 
 SOUND AND SAVES
 The supplied slugterra-metamorphosis-shot.mp3 is included in this HTML and plays
-automatically for all three transformations. No manual import is needed. Its
+automatically for all transformations, including the added companions. No manual import is needed. Its
 1.824-second recording starts about 85 milliseconds in to skip leading silence
 and synchronize playback. The recording was supplied by the user. Separate
 blaster and impact recordings have not been supplied; those effects use original
@@ -95,12 +107,14 @@ Imported overrides stay in this browser's IndexedDB when storage is available;
 they are not uploaded or added to this ZIP. The supplied default MP3 is embedded
 separately. The Remove imported clips control restores the included transformation
 recording and original synthesis for the other effects.
-Save progress/settings use localStorage key slugterra.luminous-deep.v1. Clearing
+Campaign saves use localStorage key slugterra.campaign.v2, preserving the original
+slugterra.luminous-deep.v1 save as a migration recovery copy. Clearing
 site data removes local progress/audio. Saves do not synchronize across devices.
-Settings > Visual quality > Performance reduces render resolution.
+Settings > Visual quality > Performance reduces render resolution; Ultra adds
+resolution, shadow quality and new-cavern detail. Challenge settings tune combat.
 
 This is an original procedural Slugterra-inspired playable vertical slice with
-one complete quest, not a commercial AAA game. This package is a local build
+one complete original quest and three connected cavern expeditions. This package is a local build
 artifact. It does not publish a website or change the repository's remote.
 `;
 

@@ -106,7 +106,10 @@ async function main() {
     await page.keyboard.up('f');
     assert.equal(await page.evaluate(() => window.__SLUGTERRA__.projectiles.some(p=>!p.hostile && p.morphed && p.morph.visible && !p.proto.visible && p.speed>=44.7)),true);
     await page.screenshot({path:path.join(root,'test-results/velocimorph-flight.png')});
-    await page.waitForFunction(() => !window.__SLUGTERRA__.game.state.slugs[1].inFlight, undefined,{timeout:20000});
+    // Software WebGL can run near 1 frame/second while simulation advances at
+    // most 0.2 seconds per frame. Allow the unchanged outward + return flight
+    // to finish on that renderer; the phase/speed assertions above still apply.
+    await page.waitForFunction(() => !window.__SLUGTERRA__.game.state.slugs[1].inFlight, undefined,{timeout:60000});
     assert.ok(await page.evaluate(()=>window.__SLUGTERRA__.combatStats.returns)>0);
     console.log('PASS: accelerating protoform transforms at100mph, renders battle form and returns to blaster');
 

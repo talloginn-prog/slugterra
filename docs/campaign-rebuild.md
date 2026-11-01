@@ -2,7 +2,17 @@
 
 Requested 2026-11-01. Research must precede the visual/content rebuild.
 
-## Current status
+## Continuation implemented after repository recovery
+
+The prior development source was pushed to `backup/slugterra-rpg-development-2026-11-01` at `48a720ce10a90731bd4f4b1c2aac0114c6196f22`. All 25 files were verified against their Git blobs before edits, including the supplied MP3 (SHA-256 `7ae14c8c32011e6b983afdf2d62be18f7e8a0bacc12c071d47c061e7a23703ae`). The unchanged baseline passed all 21 tests, the production build and the complete original browser suite.
+
+The continuation retains the original expedition and adds Dark Spores/Pyrite, travel lifecycle and checkpoints, persistent encounters/discoveries/surveys, six companions with three equipped slots, a blaster shop, training and guided Slug Fu, enemy telegraphs/cover/leash behavior, and Ultra/challenge settings. Saves migrate to a separate version-2 key while retaining version-1 recovery data. The audio engine, IndexedDB and supplied recording remain independent of campaign travel.
+
+The current environment has enforced unrestricted HTTP access. The official site, Disney-hosted legacy arsenal and tested source image hosts return HTTP 200. Fandom articles still return HTTP 402; indexed Wiki evidence and directly inspected images are labeled accordingly. See [verified canon](references/verified-canon-2026-11-01.md), [cavern reference board](references/cavern-reference-board.md), and [reference provenance](references/reference-assets.json).
+
+The network restrictions and archive path in the earlier record below describe the previous environment. `.local/backups/pre-campaign-2026-11-01.tar.gz` is ignored and was not pushed; the remote backup branch above is the verified restore point. No claim is made that personal audio clips held in another browser origin were recovered from GitHub.
+
+## Earlier research status (historical)
 
 Application implementation has not started. The running environment permits package-manager destinations but currently denies the reference websites. Read-only HTTPS attempts to the following URLs returned proxy tunnel HTTP 403 errors:
 

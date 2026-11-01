@@ -10,7 +10,10 @@
     "preview": "vite preview --host 0.0.0.0",
     "test": "node --test --experimental-test-isolation=none tests/*.test.js",
     "test:browser": "node tests/browser-smoke.cjs",
-    "package:game": "npm run build && node scripts/package-game.mjs"
+    "package:game": "npm run build && node scripts/package-game.mjs",
+    "test:campaign": "node tests/campaign-browser.cjs",
+    "test:portable": "node tests/portable-smoke.cjs",
+    "test:lifecycle": "node tests/lifecycle-browser.cjs"
   },
   "dependencies": {
     "three": "0.180.0"

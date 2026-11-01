@@ -1,0 +1,406 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-11-01",
+  "path_base": "repository root; relative_path_from_manifest resolves from docs/references",
+  "purpose": "Original source images for an attributed in-game reference atlas and production visual study; no image pixels changed.",
+  "assets": [
+    {
+      "id": "dark-spores-cavern",
+      "subject": "Dark Spores Cavern",
+      "source_page": "https://slugterra.fandom.com/wiki/Dark_Spores_Cavern",
+      "asset_url": "https://static.wikia.nocookie.net/slugterra/images/5/5d/Dark_Spores_Cavern.png/revision/latest?cb=20161005203503",
+      "provenance": "Animated-series still, Wiki file URL found by image search; direct article access blocked.",
+      "http_status": 200,
+      "content_type": "image/webp",
+      "dimensions": [
+        1366,
+        762
+      ],
+      "image_format": "WEBP",
+      "mode": "RGB",
+      "bytes": 111028,
+      "sha256": "9eb0bab0a722ca6eccac57ba0d1d4932721f10b9ba9c0d12dec362a9d6a40618",
+      "visually_inspected": true,
+      "visual_observations": "Dense forest of branching dark trunks and giant mushroom canopies. Turquoise cap undersides, muted red/orange cap rims, blue-green ground, purple atmospheric depth. The lower foreground is much darker than luminous middleground; broad organic shapes read before fine texture.",
+      "uncertainty_notes": "Image file and indexed page identify Dark Spores; do not relabel it Wild Spores or assume every forest cavern looks the same.",
+      "repository_path": "src/assets/references/dark-spores-cavern.webp",
+      "relative_path_from_manifest": "../../src/assets/references/dark-spores-cavern.webp",
+      "source_confidence": "secondary-wiki-file-attribution"
+    },
+    {
+      "id": "pyrite-cavern",
+      "subject": "Pyrite Cavern",
+      "source_page": "https://slugterra.fandom.com/wiki/Pyrite_Cavern",
+      "asset_url": "https://vignette.wikia.nocookie.net/slugterra/images/4/44/Pyrite_Cavern.png/revision/latest?cb=20160308201445",
+      "provenance": "Animated-series still, Wiki file URL found by image search; direct article access blocked.",
+      "http_status": 200,
+      "content_type": "image/webp",
+      "dimensions": [
+        1366,
+        762
+      ],
+      "image_format": "WEBP",
+      "mode": "RGB",
+      "bytes": 119622,
+      "sha256": "1f510bfebc6c94b49af1e4c4b24db39dd92dcabb8c7a33e0fa93ad6606e7e06c",
+      "visually_inspected": true,
+      "visual_observations": "Wide cool-blue cavern with stepped platforms, tall cyan waterfall curtains, a massive fragmented arch/structure, dark hanging ceiling silhouettes and sparse violet/green flora. Small group figures establish monumental scale.",
+      "uncertainty_notes": "Asset attribution is Pyrite Cavern. No inference that its blue stone is ice, nor that the central form is a shipwreck without episode/source confirmation.",
+      "repository_path": "src/assets/references/pyrite-cavern.webp",
+      "relative_path_from_manifest": "../../src/assets/references/pyrite-cavern.webp",
+      "source_confidence": "secondary-wiki-file-attribution"
+    },
+    {
+      "id": "shane-gang-broadcaster",
+      "subject": "Shane Gang: Eli Shane, Trixie, Kord, Pronto",
+      "source_page": "https://iview.abc.net.au/show/slugterra/series/1/video/ZX9896A004S00",
+      "asset_url": "https://cdn.iview.abc.net.au/thumbs/i/zx/ZX9896A004S00568c9cb60c2e31.48385347_1280.jpg",
+      "provenance": "Broadcaster ABC iview episode thumbnail, actual still found by image search; image caption not accepted as independent lore.",
+      "http_status": 200,
+      "content_type": "image/jpeg",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "image_format": "JPEG",
+      "mode": "RGB",
+      "bytes": 138721,
+      "sha256": "14788742ca15be4b82b1694c882df776de879ec99a3c97a994d0c8a28587af95",
+      "visually_inspected": true,
+      "visual_observations": "Four clear silhouettes: Pronto is short and broad with mauve skin, moustache, blue/white striped shirt and orange scarf; Trixie is slim with auburn side hair buns, green top and gray trousers; Eli has dark hair, black/orange top, blue trousers and a side blaster; Kord is very tall/broad with blue skin, dark vest and oversized spotted metal bracers. Cyan slug canisters recur across their equipment. The backdrop has stylized tree/cavern structures and teal haze.",
+      "uncertainty_notes": "Scene/location caption from image search is not treated as verified lore. This is a broadcaster still suitable for appearance/relative-scale reference, not evidence of character stats.",
+      "repository_path": "src/assets/references/shane-gang-broadcaster.jpg",
+      "relative_path_from_manifest": "../../src/assets/references/shane-gang-broadcaster.jpg",
+      "source_confidence": "primary-broadcaster-still"
+    },
+    {
+      "id": "burpy-protoform",
+      "subject": "Burpy / Infurnus protoform",
+      "source_page": "https://dolimg.com/media/en-US/games/html5/slugarsenal/infurnus.html",
+      "asset_url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Infurnus/Opening_Burpy.png",
+      "provenance": "Disney-hosted legacy official Slugterra arsenal; exact image path appears in page HTML.",
+      "http_status": 200,
+      "content_type": "image/png",
+      "dimensions": [
+        312,
+        340
+      ],
+      "image_format": "PNG",
+      "mode": "RGBA",
+      "bytes": 82474,
+      "sha256": "d4185f613287d4bc12c7c1ec3b2fd298b9fac3f9737e0631137c67e9096909a1",
+      "visually_inspected": true,
+      "visual_observations": "Warm orange upright slug, two tapered horns, large paired black-and-white eyes, yellow flame-shaped forehead and belly marks, small side appendages. Curved silhouette and facial expression remain clear at small size.",
+      "uncertainty_notes": "Named as Burpy and Infurnus by official arsenal HTML; do not substitute an arbitrary red fire creature.",
+      "repository_path": "src/assets/references/burpy-protoform.png",
+      "relative_path_from_manifest": "../../src/assets/references/burpy-protoform.png",
+      "source_confidence": "primary-official-legacy"
+    },
+    {
+      "id": "doc-protoform",
+      "subject": "Doc / Boon Doc protoform",
+      "source_page": "https://dolimg.com/media/en-US/games/html5/slugarsenal/boon_doc.html",
+      "asset_url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Boon%20Doc/Opening_Doc.png",
+      "provenance": "Disney-hosted legacy official Slugterra arsenal; exact image path appears in page HTML.",
+      "http_status": 200,
+      "content_type": "image/png",
+      "dimensions": [
+        312,
+        340
+      ],
+      "image_format": "PNG",
+      "mode": "RGBA",
+      "bytes": 70551,
+      "sha256": "f8fedb6441b2f59267b4dd4ed2e06b105d4357c1bacee8f5786d9f23446bddc8",
+      "visually_inspected": true,
+      "visual_observations": "Green upright slug with one large horizontal eye, long thin paired antennae, pale green face/belly, darker green sides, tiny side appendages and a slightly asymmetric grin.",
+      "uncertainty_notes": "Named as Doc and Boon Doc by official arsenal; green coloration alone does not establish elemental taxonomy. Official page calls the element Light and power type Healing.",
+      "repository_path": "src/assets/references/doc-protoform.png",
+      "relative_path_from_manifest": "../../src/assets/references/doc-protoform.png",
+      "source_confidence": "primary-official-legacy"
+    },
+    {
+      "id": "joules-protoform",
+      "subject": "Joules / Tazerling protoform",
+      "source_page": "https://dolimg.com/media/en-US/games/html5/slugarsenal/tazerling.html",
+      "asset_url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Tazerling/Opening_Joules_CP.png",
+      "provenance": "Disney-hosted legacy official Slugterra arsenal; exact image path appears in page HTML.",
+      "http_status": 200,
+      "content_type": "image/png",
+      "dimensions": [
+        312,
+        340
+      ],
+      "image_format": "PNG",
+      "mode": "RGBA",
+      "bytes": 44399,
+      "sha256": "2d12408e4e2190d45ce0bbcb0e8551860429c548a44337a6602e35d1d10dd0b3",
+      "visually_inspected": true,
+      "visual_observations": "Vivid cobalt-blue slug with pale cyan belly, lightning-shaped yellow horn/brow marks, large paired eyes, two prominent white fangs and small yellow belly spots.",
+      "uncertainty_notes": "Named as Joules and Tazerling by official arsenal; retain lightning horn geometry rather than generic round antennae.",
+      "repository_path": "src/assets/references/joules-protoform.png",
+      "relative_path_from_manifest": "../../src/assets/references/joules-protoform.png",
+      "source_confidence": "primary-official-legacy"
+    },
+    {
+      "id": "burpy-velocimorph",
+      "subject": "Burpy / Infurnus transformed",
+      "source_page": "https://dolimg.com/media/en-US/games/html5/slugarsenal/infurnus.html",
+      "asset_url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Infurnus/Burpy_transformmatte2.png",
+      "provenance": "Disney-hosted legacy official Slugterra arsenal; exact image path appears in page HTML. Do not label as megamorph without further evidence.",
+      "http_status": 200,
+      "content_type": "image/png",
+      "dimensions": [
+        312,
+        340
+      ],
+      "image_format": "PNG",
+      "mode": "RGBA",
+      "bytes": 110900,
+      "sha256": "c8947fab928c03ac26ccd23ab21818f9da2cbbdce619e0ce0620c638f8ea9e79",
+      "visually_inspected": true,
+      "visual_observations": "Transformed orange flying/charging silhouette with pointed facial/horn accents, pale yellow underside and a strong orange-yellow flame envelope. Expression and eye design connect it to protoform Burpy.",
+      "uncertainty_notes": "Official source marks this as transformed artwork. Asset is not independently verified as a megamorph; keep that label separate.",
+      "repository_path": "src/assets/references/burpy-velocimorph.png",
+      "relative_path_from_manifest": "../../src/assets/references/burpy-velocimorph.png",
+      "source_confidence": "primary-official-legacy"
+    },
+    {
+      "id": "doc-velocimorph",
+      "subject": "Doc / Boon Doc transformed",
+      "source_page": "https://dolimg.com/media/en-US/games/html5/slugarsenal/boon_doc.html",
+      "asset_url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Boon%20Doc/Doc_transformmatte.png",
+      "provenance": "Disney-hosted legacy official Slugterra arsenal; exact image path appears in page HTML.",
+      "http_status": 200,
+      "content_type": "image/png",
+      "dimensions": [
+        312,
+        340
+      ],
+      "image_format": "PNG",
+      "mode": "RGBA",
+      "bytes": 111382,
+      "sha256": "6c5f1826545c8b4836c0683a4e3cf953366136c09fa42f27c00cd1dd4452de34",
+      "visually_inspected": true,
+      "visual_observations": "Transformed broad green form with pale underbelly, one dominant eye, articulated forward side limbs, trailing small tendrils and a turquoise light/spark envelope.",
+      "uncertainty_notes": "Official transformed Doc artwork; floating/aura effect is visual reference, not proof of any specific healing animation or ability unlock.",
+      "repository_path": "src/assets/references/doc-velocimorph.png",
+      "relative_path_from_manifest": "../../src/assets/references/doc-velocimorph.png",
+      "source_confidence": "primary-official-legacy"
+    },
+    {
+      "id": "joules-velocimorph",
+      "subject": "Joules / Tazerling transformed",
+      "source_page": "https://dolimg.com/media/en-US/games/html5/slugarsenal/tazerling.html",
+      "asset_url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Tazerling/Joules_transformmatte.png",
+      "provenance": "Disney-hosted legacy official Slugterra arsenal; exact image path appears in page HTML.",
+      "http_status": 200,
+      "content_type": "image/png",
+      "dimensions": [
+        312,
+        340
+      ],
+      "image_format": "PNG",
+      "mode": "RGBA",
+      "bytes": 152154,
+      "sha256": "2cfbfe1df818b41abe3799654974446d4e6c0333fe131e8616f9f3959e9224cb",
+      "visually_inspected": true,
+      "visual_observations": "Transformed elongated blue quadrupedal charging form, pale blue face/underside, yellow zigzag markings, prominent white fangs and arcs of yellow electrical energy.",
+      "uncertainty_notes": "Official transformed Joules artwork; keep form and attack behavior distinct from protoform companion.",
+      "repository_path": "src/assets/references/joules-velocimorph.png",
+      "relative_path_from_manifest": "../../src/assets/references/joules-velocimorph.png",
+      "source_confidence": "primary-official-legacy"
+    },
+    {
+      "id": "eli-blaster-official",
+      "subject": "Eli's Blaster official toy reference",
+      "source_page": "https://www.slugterra.com/",
+      "asset_url": "https://www.slugterra.com/cdn/shop/files/Eli_s_Blaster_ST100005-2.jpg?v=1725482633&width=533",
+      "provenance": "Current official Slugterra product image; toy finish and proportions are product reference, not an exact animation model.",
+      "http_status": 200,
+      "content_type": "image/jpeg",
+      "dimensions": [
+        500,
+        500
+      ],
+      "image_format": "JPEG",
+      "mode": "RGB",
+      "bytes": 30266,
+      "sha256": "6fa714027269f34cf5861f2598fe0770802cd95ea54f15e6d34c91a507df4669",
+      "visually_inspected": true,
+      "visual_observations": "Compact asymmetric orange/blue/gray blaster with cylindrical cyan canister, circular segmented chamber, short barrel, gray pistol grip and blue star motif.",
+      "uncertainty_notes": "Current official toy photo; plastic finish and product proportions should not be mistaken for exact in-show model geometry.",
+      "repository_path": "src/assets/references/eli-blaster-official.jpg",
+      "relative_path_from_manifest": "../../src/assets/references/eli-blaster-official.jpg",
+      "source_confidence": "primary-official-product"
+    },
+    {
+      "id": "frost-protoform",
+      "subject": "Frostcrawler protoform",
+      "source_page": "https://dolimg.com/media/en-US/games/html5/slugarsenal/frostcrawler.html",
+      "asset_url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Frostcrawler/Opening_Chiller.png",
+      "provenance": "Disney-hosted legacy official Slug Arsenal; exact image path in HTML, NerdCorps author metadata. Source image downloaded once and copied without conversion.",
+      "source_confidence": "primary-official-legacy",
+      "http_status": 200,
+      "content_type": "image/png",
+      "dimensions": [
+        312,
+        340
+      ],
+      "image_format": "PNG",
+      "mode": "RGBA",
+      "repository_path": "src/assets/references/frost-protoform.png",
+      "relative_path_from_manifest": "../../src/assets/references/frost-protoform.png",
+      "bytes": 69497,
+      "sha256": "fb5e42746b827de820530f6e83f77416907f4c237d492f3f5f51c9196e247f01",
+      "visually_inspected": true,
+      "visual_observations": "Bright cyan upright body, one large purple-pupilled eye, short curved paired horns/antennae, small side arms and a small visible fang. Broad base and narrow neck keep a distinct one-eyed silhouette.",
+      "uncertainty_notes": "Transformed reference is not labeled Megamorph; source-image appearance does not establish numeric game behavior."
+    },
+    {
+      "id": "frost-velocimorph",
+      "subject": "Frostcrawler velocimorph",
+      "source_page": "https://dolimg.com/media/en-US/games/html5/slugarsenal/frostcrawler.html",
+      "asset_url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Frostcrawler/FrostCrawler_transformmatte2.png",
+      "provenance": "Disney-hosted legacy official Slug Arsenal; exact image path in HTML, NerdCorps author metadata. Source image downloaded once and copied without conversion.",
+      "source_confidence": "primary-official-legacy",
+      "http_status": 200,
+      "content_type": "image/png",
+      "dimensions": [
+        312,
+        340
+      ],
+      "image_format": "PNG",
+      "mode": "RGBA",
+      "repository_path": "src/assets/references/frost-velocimorph.png",
+      "relative_path_from_manifest": "../../src/assets/references/frost-velocimorph.png",
+      "bytes": 91799,
+      "sha256": "d248f954a47c757d348f6a16509f2bfcd1ccac3f41a7655e9a9aa6673a65ad14",
+      "visually_inspected": true,
+      "visual_observations": "Fast horizontal silhouette with a dense white jagged shaggy/serrated mantle, dark blue underside, teal brow horns and pale streaking ice/snow. It does not resemble a six-legged beetle.",
+      "uncertainty_notes": "Transformed reference is not labeled Megamorph; source-image appearance does not establish numeric game behavior."
+    },
+    {
+      "id": "glow-protoform",
+      "subject": "Phosphoro protoform",
+      "source_page": "https://dolimg.com/media/en-US/games/html5/slugarsenal/phosphoro.html",
+      "asset_url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Phosphoro/3.png",
+      "provenance": "Disney-hosted legacy official Slug Arsenal; exact image path in HTML, NerdCorps author metadata. Source image downloaded once and copied without conversion.",
+      "source_confidence": "primary-official-legacy",
+      "http_status": 200,
+      "content_type": "image/png",
+      "dimensions": [
+        312,
+        340
+      ],
+      "image_format": "PNG",
+      "mode": "RGBA",
+      "repository_path": "src/assets/references/glow-protoform.png",
+      "relative_path_from_manifest": "../../src/assets/references/glow-protoform.png",
+      "bytes": 48847,
+      "sha256": "7f403d74a5ca70e1c339b369ac51709fa1157d0aad7a609a75a5d3dc4af5f6ce",
+      "visually_inspected": true,
+      "visual_observations": "Turquoise upright body and face with a navy hood/back, paired slender stalks, blue forehead dots and a bright central forehead spot; large paired eyes look upward.",
+      "uncertainty_notes": "Transformed reference is not labeled Megamorph; source-image appearance does not establish numeric game behavior."
+    },
+    {
+      "id": "glow-velocimorph",
+      "subject": "Phosphoro velocimorph",
+      "source_page": "https://dolimg.com/media/en-US/games/html5/slugarsenal/phosphoro.html",
+      "asset_url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Phosphoro/Phosphoro_Transformed_312x340.png",
+      "provenance": "Disney-hosted legacy official Slug Arsenal; exact image path in HTML, NerdCorps author metadata. Source image downloaded once and copied without conversion.",
+      "source_confidence": "primary-official-legacy",
+      "http_status": 200,
+      "content_type": "image/png",
+      "dimensions": [
+        312,
+        340
+      ],
+      "image_format": "PNG",
+      "mode": "RGBA",
+      "repository_path": "src/assets/references/glow-velocimorph.png",
+      "relative_path_from_manifest": "../../src/assets/references/glow-velocimorph.png",
+      "bytes": 80588,
+      "sha256": "415c4e2745231d24d1f24bddabcca44b0afb3e648fe45ec5bbd7ab60b1ea59b4",
+      "visually_inspected": true,
+      "visual_observations": "Broad dark navy spotted ray-like mantle trails left of a green face, with long arched stalks ending in luminous white/cyan forms. The head, mouth and two stalk lights define the form.",
+      "uncertainty_notes": "Transformed reference is not labeled Megamorph; source-image appearance does not establish numeric game behavior."
+    }
+  ],
+  "source_limits": [
+    "Direct Fandom articles returned HTTP402; exact Wiki image URLs returned HTTP200. Named cavern attribution is secondary/indexed; visual observations come from actual image inspection.",
+    "Legacy Disney-hosted profiles are official promotional/game-era evidence, not a universal show/game taxonomy.",
+    "Official toy photography establishes a product appearance, not exact animation-model geometry."
+  ],
+  "historical_species_taxonomy": [
+    {
+      "id": "infurnus",
+      "name": "Infurnus",
+      "sourceNumber": "001",
+      "sourceElement": "Fire",
+      "sourcePower": "A powerful fire slug",
+      "sourceRarityLabel": "Ultra Rare",
+      "sourceUrl": "https://dolimg.com/media/en-US/games/html5/slugarsenal/infurnus.html"
+    },
+    {
+      "id": "tazerling",
+      "name": "Tazerling",
+      "sourceNumber": "002",
+      "sourceElement": "Electricity",
+      "sourcePower": "Electricity",
+      "sourceRarityLabel": "Common",
+      "sourceUrl": "https://dolimg.com/media/en-US/games/html5/slugarsenal/tazerling.html"
+    },
+    {
+      "id": "aquabeek",
+      "name": "AquaBeek",
+      "sourceNumber": "015",
+      "sourceElement": "Water",
+      "sourcePower": "Water and sonar",
+      "sourceRarityLabel": "Uncommon",
+      "sourceUrl": "https://dolimg.com/media/en-US/games/html5/slugarsenal/aquabeek.html"
+    },
+    {
+      "id": "boon-doc",
+      "name": "Boon Doc",
+      "sourceNumber": "003",
+      "sourceElement": "Light",
+      "sourcePower": "Healing",
+      "sourceRarityLabel": "Extremely Rare",
+      "sourceUrl": "https://dolimg.com/media/en-US/games/html5/slugarsenal/boon_doc.html"
+    },
+    {
+      "id": "frostcrawler",
+      "name": "Frostcrawler",
+      "sourceNumber": "008",
+      "sourceElement": "Ice",
+      "sourcePower": "Freezing and ice",
+      "sourceRarityLabel": "Common",
+      "sourceUrl": "https://dolimg.com/media/en-US/games/html5/slugarsenal/frostcrawler.html"
+    },
+    {
+      "id": "phosphoro",
+      "name": "Phosphoro",
+      "sourceNumber": "021",
+      "sourceElement": "Light",
+      "sourcePower": "Light",
+      "sourceRarityLabel": "Common",
+      "sourceUrl": "https://dolimg.com/media/en-US/games/html5/slugarsenal/phosphoro.html"
+    },
+    {
+      "id": "enigmo",
+      "name": "Enigmo",
+      "sourceNumber": "017",
+      "sourceElement": "Light",
+      "sourcePower": "Perception effect",
+      "sourceRarityLabel": "Ultra Rare",
+      "sourceUrl": "https://dolimg.com/media/en-US/games/html5/slugarsenal/enigmo.html"
+    }
+  ],
+  "classification_limits": [
+    "Rarity labels are preserved verbatim from legacy source: no spawn probabilities, numeric prices, or universal ranking inferred.",
+    "Power type and element are separate. Boon Doc is Light element with Healing power.",
+    "Project combat roles, skill costs, cooldowns, currency rewards, and discovery placements are original balancing choices."
+  ],
+  "rights_note": "Source copyrights remain with their respective owners. Retrieval and source citation do not establish a general redistribution license."
+}

@@ -63,15 +63,185 @@ function helpers(THREE) {
 }
 
 function kindOf(slug) {
-  const identity = String(typeof slug === 'string' ? slug : `${slug?.id || ''} ${slug?.species || ''} ${slug?.element || ''}`).toLowerCase();
-  if (/volt|tazer|electric|joules/.test(identity)) return 'electric';
-  if (/tide|aqua|water|beek/.test(identity)) return 'water';
-  return 'fire';
+  const aliases = {
+    infurnus: 'fire', ember: 'fire', burpy: 'fire', fire: 'fire',
+    tazerling: 'electric', volt: 'electric', joules: 'electric', electric: 'electric', electricity: 'electric',
+    aquabeek: 'water', tide: 'water', beeker: 'water', water: 'water',
+    frostcrawler: 'ice', frost: 'ice', chiller: 'ice', ice: 'ice',
+    'boon-doc': 'healing', boondoc: 'healing', doc: 'healing', healing: 'healing',
+    phosphoro: 'light', glow: 'light', glimmer: 'light', light: 'light',
+  };
+  const normalize = value => String(value || '').toLowerCase().trim().replace(/[_\s]+/g, '-');
+  if (typeof slug === 'object' && slug !== null) {
+    const explicit = slug.modelArchetype || slug.archetype;
+    if (explicit) return aliases[normalize(explicit)] || 'neutral';
+    // Species identity wins over a shared element: Boon Doc is a Light species,
+    // but needs its one-eyed healing silhouette rather than Phosphoro's hood.
+    for (const value of [slug.speciesId, slug.species, slug.id, slug.element]) {
+      const match = aliases[normalize(value)];
+      if (match) return match;
+    }
+    return 'neutral';
+  }
+  return aliases[normalize(slug)] || 'neutral';
+}
+
+// Additional silhouettes are modeled from the legacy official Slug Arsenal art,
+// not by recoloring an Infurnus. Source notes live in docs/references/.
+function createAdditionalSlugModel(THREE, slug, kind, { scale, morphed }) {
+  const b = helpers(THREE), { group, material, egg, tube, shape, curveShape, add } = b;
+  const doc = kind === 'healing', frost = kind === 'ice', light = kind === 'light';
+  const skin = material('skin', doc ? 0x299b69 : frost ? 0x29acd9 : light ? 0x54c2be : 0x82959f, { roughness: .5 });
+  const dorsal = material('dorsal', doc ? 0x147452 : frost ? 0x176b9a : light ? 0x153a85 : 0x495d6b, { roughness: .48 });
+  const belly = material('belly', doc ? 0xb0e58d : frost ? 0x86def0 : light ? 0x9ce9dd : 0xc6d5d8, { roughness: .58 });
+  const ivory = material('eye-white', 0xfff8e9, { roughness: .36 });
+  const pupil = material('pupil', 0x112232, { roughness: .25 });
+  const iris = material('iris', frost ? 0x954be2 : doc ? 0x87a55b : 0x243d99, { roughness: .3 });
+  const mouth = material('mouth', doc ? 0x254539 : frost ? 0x153e5d : 0x243851, { roughness: .8 });
+  const shine = material('eye-shine', 0xffffff, { glow: 0xffffff, intensity: .3 });
+  const luminous = material('bioluminescence', doc ? 0x68ffe2 : frost ? 0xc2f8ff : 0xafffff, { glow: doc ? 0x34efcc : frost ? 0x86dfff : 0x8cffff, intensity: light ? 1.7 : .6, roughness: .3 });
+  const whiteIce = frost ? material('ice-mantle', 0xd8f5ff, { metalness: .1, roughness: .34 }) : null;
+  group.name = `${slug?.species || (doc ? 'Boon Doc' : frost ? 'Frostcrawler' : light ? 'Phosphoro' : 'Unidentified slug')} ${morphed ? 'Velocimorph' : 'companion'}`;
+
+  function singleEye(y, z, size = 1, halfLid = false) {
+    egg(ivory, [0, y, z], [.171 * size, .094 * size, .047 * size], [0, 0, frost ? -.10 : .035]);
+    egg(iris, [.058 * size, y + .007 * size, z - .042 * size], [.064 * size, .079 * size, .018 * size]);
+    egg(pupil, [.06 * size, y + .008 * size, z - .058 * size], [.037 * size, .061 * size, .010 * size]);
+    egg(shine, [.043 * size, y + .042 * size, z - .067 * size], [.022 * size, .008 * size, .005 * size], [0, 0, -.25]);
+    if (halfLid) egg(dorsal, [0, y + .075 * size, z - .021 * size], [.18 * size, .049 * size, .048 * size], [0, 0, .035]);
+    tube(dorsal, [[-.16 * size, y + .073 * size, z - .012], [0, y + .11 * size, z - .022], [.16 * size, y + .07 * size, z - .012]], .012 * size);
+  }
+  function pairedEyes(y, z, size = 1) {
+    for (const side of [-1, 1]) {
+      egg(ivory, [side * .107 * size, y, z], [.084 * size, .103 * size, .045 * size], [0, side * -.18, side * -.21]);
+      egg(iris, [side * .102 * size, y + .026 * size, z - .035 * size], [.045 * size, .057 * size, .019 * size]);
+      egg(pupil, [side * .101 * size, y + .027 * size, z - .052 * size], [.026 * size, .039 * size, .009 * size]);
+      egg(shine, [side * .107 * size - .009, y + .047 * size, z - .061 * size], [.014 * size, .008 * size, .005 * size]);
+    }
+  }
+  function grin(y, z, width = .12) {
+    tube(mouth, [[-width, y + .02, z], [-width * .45, y - .012, z - .024], [width * .38, y - .01, z - .025], [width, y + .03, z + .005]], .009);
+  }
+
+  if (!morphed) {
+    egg(skin, [0, .325, .012], [doc ? .19 : .207, .32, .195]);
+    egg(skin, [0, .46, -.012], [doc ? .231 : .243, .235, .209], [0, 0, frost ? -.06 : .035]);
+    egg(skin, [0, .075, .11], [.22, .075, .25]);
+    egg(belly, [0, .25, -.158], [.146, .227, .055]);
+    for (const side of [-1, 1]) {
+      egg(skin, [side * .191, .19, .005], [.05, .105, .046], [0, 0, side * -.28]);
+      egg(skin, [side * .16, .045, -.035], [.09, .034, .103]);
+    }
+    if (doc || frost) {
+      singleEye(.485, -.2, 1, doc);
+      grin(.347, -.202, .131);
+      // A tiny visible fang and asymmetric grin retain the one-eyed faces.
+      shape(ivory, [[-.013, .018], [.012, .018], [.004, -.017]], .012, [doc ? .105 : .121, .346, -.221]);
+      for (const side of [-1, 1]) {
+        const top = doc ? .93 : .81;
+        tube(skin, [[side * .105, .64, .008], [side * .115, .72, .01], [side * (doc ? .135 : .113), top - .03, .01], [side * (doc ? .13 : .16), top, -.005]], doc ? .013 : .017);
+        if (doc) egg(dorsal, [side * .13, top, -.005], [.013, .025, .013]);
+      }
+      if (frost) {
+        for (let i = 0; i < 5; i++) egg(belly, [(i % 2 ? -1 : 1) * .07, .18 + i * .075, -.198], [.027, .035, .008]);
+      }
+    } else {
+      if (light) {
+        egg(dorsal, [0, .575, .005], [.234, .145, .20]);
+        for (const side of [-1, 1]) {
+          tube(dorsal, [[side * .11, .65, .012], [side * .13, .77, .026], [side * .18, .87, .015]], .012);
+          egg(luminous, [side * .18, .87, .015], [.013, .024, .014], [0, 0, side * -.3]);
+          tube(dorsal, [[side * .18, .24, -.08], [side * .22, .20, -.08], [side * .23, .25, -.08]], .018);
+        }
+        for (let i = 0; i < 3; i++) egg(material('hood-spots', 0x2464bc), [0, .65 - i * .045, -.134 - i * .025], [.025 - i * .003, .019, .009]);
+        egg(luminous, [0, .552, -.199], [.022, .027, .013]);
+      }
+      pairedEyes(.463, -.19);
+      grin(.333, -.205);
+    }
+  } else if (doc) {
+    // Broad healing form, forward hands and curling rear feelers, not a fire wing.
+    egg(dorsal, [0, .11, .09], [.32, .25, .47]);
+    egg(belly, [0, -.015, -.045], [.25, .12, .39]);
+    egg(skin, [0, .14, -.367], [.335, .25, .285]);
+    egg(belly, [0, .04, -.51], [.235, .12, .157]);
+    singleEye(.235, -.603, 1.23, true);
+    grin(.065, -.653, .185);
+    for (const side of [-1, 1]) {
+      tube(skin, [[side * .25, .06, -.18], [side * .39, -.04, -.34], [side * .46, .01, -.54]], .067);
+      egg(belly, [side * .46, .012, -.54], [.093, .06, .075]);
+      for (let j = 0; j < 3; j++) tube(skin, [[side * .46, .025, -.57], [side * (.48 + j * .038), .03 + j * .025, -.64], [side * (.46 + j * .036), .055 + j * .025, -.67]], .016);
+      tube(skin, [[side * .23, -.02, .20], [side * .40, -.065, .20], [side * .45, -.015, .06]], .054);
+      for (let i = 0; i < 4; i++) {
+        const y = -.04 + i * .1;
+        tube(dorsal, [[side * .22, y, .30], [side * (.32 + i * .027), y + .04, .54], [side * (.39 + i * .025), y + .10, .70], [side * (.44 + i * .025), y + .15, .66]], .024 - i * .002);
+      }
+    }
+    const aura = material('healing-aura', 0x66ffe3, { glow: 0x42ffcc, intensity: 1.1, transparent: true, opacity: .38, depthWrite: false, blending: THREE.AdditiveBlending });
+    for (let i = 0; i < 9; i++) {
+      const angle = i / 9 * Math.PI * 2;
+      egg(aura, [Math.cos(angle) * .47, .12 + Math.sin(angle) * .27, .28 + Math.sin(angle * 2) * .18], [.026, .035, .055]);
+    }
+  } else if (frost) {
+    // The source's white serrated mantle overlaps an icy blue streamlined body.
+    egg(dorsal, [0, .08, .03], [.30, .22, .61]);
+    egg(belly, [0, -.04, -.10], [.23, .095, .47]);
+    egg(skin, [0, .12, -.47], [.275, .19, .25]);
+    egg(whiteIce, [0, .25, .045], [.31, .16, .57]);
+    egg(whiteIce, [0, .258, -.43], [.287, .12, .24]);
+    singleEye(.15, -.663, .94);
+    grin(.035, -.663, .14);
+    for (const side of [-1, 1]) {
+      tube(material('ice-brow', 0x3aaab4), [[side * .125, .27, -.60], [side * .21, .345, -.54], [side * .29, .325, -.60]], .026);
+      for (let i = 0; i < 5; i++) {
+        const z = -.32 + i * .18;
+        shape(whiteIce, [[0, -.15], [side * .15, -.11], [side * .23, .02], [side * .16, .00], [side * .20, .15], [side * .09, .12], [0, .24]], .028, [side * .13, .30 - i * .016, z], [Math.PI / 2, 0, 0]);
+      }
+      for (let i = 0; i < 3; i++) shape(whiteIce, [[0, -.10], [side * .14, -.01], [side * .31, .20], [side * .13, .14], [0, .23]], .028, [side * .15, .09, .20 + i * .12], [Math.PI / 2, 0, 0]);
+    }
+    for (let i = 0; i < 4; i++) shape(whiteIce, [[-.07, 0], [.07, 0], [.05, .13], [0, .20], [-.025, .12]], .03, [0, .35 - i * .022, -.19 + i * .19], [0, Math.PI / 2, -.08]);
+  } else if (light) {
+    // Spotted mantle with genuine openings and lantern-tipped feelers.
+    egg(dorsal, [0, .11, .17], [.33, .18, .55]);
+    egg(skin, [0, .10, -.37], [.255, .20, .28]);
+    egg(belly, [0, -.015, -.43], [.19, .10, .22]);
+    pairedEyes(.22, -.567, .88);
+    egg(mouth, [0, .045, -.615], [.143, .064, .025]);
+    egg(skin, [0, -.003, -.61], [.16, .052, .044]);
+    for (const side of [-1, 1]) {
+      curveShape(dorsal, p => {
+        p.moveTo(side * .18, -.27); p.bezierCurveTo(side * .35, -.28, side * .61, -.08, side * .68, .17);
+        p.bezierCurveTo(side * .61, .18, side * .48, .12, side * .39, .20);
+        p.bezierCurveTo(side * .54, .27, side * .67, .37, side * .67, .49);
+        p.lineTo(side * .34, .40); p.lineTo(side * .44, .69); p.lineTo(side * .16, .48); p.closePath();
+        const hole = new THREE.Path(); hole.absellipse(side * .36, .02, .095, .12, 0, Math.PI * 2, true); p.holes.push(hole);
+      }, .035, [0, .14, .10], [Math.PI / 2, 0, 0]);
+      tube(skin, [[side * .16, .25, -.40], [side * .28, .50, -.28], [side * .38, .63, -.45], [side * .42, .53, -.65]], .021);
+      egg(luminous, [side * .42, .52, -.65], [.045, .068, .12], [-.4, 0, side * -.2]);
+      for (let i = 0; i < 6; i++) egg(material('mantle-spots', 0x4b7ca8), [side * (.15 + i % 2 * .07), .27 - i * .017, -.01 + i * .09], [.025, .01, .034]);
+    }
+    egg(luminous, [0, .24, -.55], [.018, .018, .014]);
+  } else {
+    // Unsupported catalog entries remain visibly neutral rather than becoming fire.
+    egg(skin, [0, .14, .04], [.25, .20, .49]);
+    egg(belly, [0, .025, -.04], [.18, .08, .38]);
+    egg(skin, [0, .18, -.40], [.26, .19, .23]);
+    pairedEyes(.23, -.591, .9);
+    grin(.11, -.614);
+  }
+  b.bake(); group.scale.setScalar(scale);
+  group.userData.kind = kind; group.userData.morphed = morphed;
+  group.userData.form = morphed ? 'velocimorph' : 'protoform';
+  group.userData.archetype = doc ? 'boon-doc' : frost ? 'frostcrawler' : light ? 'phosphoro' : 'unknown';
+  for (const child of group.children) if (child.material?.transparent) { child.castShadow = false; child.receiveShadow = false; }
+  return group;
 }
 
 export function createSlugModel(THREE, slug, { scale = 1, morphed = false } = {}) {
+  const kind = kindOf(slug);
+  if (!['fire', 'electric', 'water'].includes(kind)) return createAdditionalSlugModel(THREE, slug, kind, { scale, morphed });
   const b = helpers(THREE), { group, material, egg, tube, shape, curveShape } = b;
-  const kind = kindOf(slug), electric = kind === 'electric', water = kind === 'water';
+  const electric = kind === 'electric', water = kind === 'water';
   const skin = material('skin', electric ? 0x2583d6 : water ? 0x20bad2 : 0xe95625, { roughness: .46 });
   const dark = material('dorsal', electric ? 0x164991 : water ? 0x167cba : 0xa82c23, { roughness: .51 });
   const belly = material('belly', electric ? 0xf0e890 : water ? 0xb3f4e3 : 0xffcc69, { roughness: .58 });
@@ -81,7 +251,7 @@ export function createSlugModel(THREE, slug, { scale = 1, morphed = false } = {}
   const shine = material('eye-shine', 0xffffff, { glow: 0xffffff, intensity: .18 });
   const mouth = material('mouth', water ? 0x164860 : 0x622d30, { roughness: .8 });
   const beak = material('beak', water ? 0xf2c56a : 0xffd771, { roughness: .4 });
-  group.name = `${slug?.species || kind} ${morphed ? 'megamorph' : 'companion'}`;
+  group.name = `${slug?.species || kind} ${morphed ? 'Velocimorph' : 'companion'}`;
 
   if (!morphed) {
     // Pear-shaped bodies, low tails, and a broad soft belly create a slug silhouette.
@@ -186,6 +356,8 @@ export function createSlugModel(THREE, slug, { scale = 1, morphed = false } = {}
     }
   }
   b.bake(); group.scale.setScalar(scale); group.userData.kind = kind; group.userData.morphed = morphed;
+  group.userData.form = morphed ? 'velocimorph' : 'protoform';
+  group.userData.archetype = ({ fire: 'infurnus', electric: 'tazerling', water: 'aquabeek' })[kind];
   return group;
 }
 
@@ -269,20 +441,70 @@ export function createBlasterModel(THREE, slugs = []) {
     const c=ring(screw,.075,.009,0,0,z,carousel);chamberEnds.push(c);
     for(let i=0;i<4;i++){const a=i/4*Math.PI*2;box(glow,[Math.cos(a)*.071,Math.sin(a)*.071,z],[.012,.012,.02],undefined,carousel);}
   }
-  let companion=null,selected=-1,time=0;
-  function setSlug(index){
-    const next=Number.isInteger(index)&&index>=0&&index<slugs.length?index:0;
-    if(next===selected&&companion)return;
-    if(companion){carousel.remove(companion);const geometries=new Set(),materials=new Set();companion.traverse(o=>{if(o.isMesh){geometries.add(o.geometry);for(const m of (Array.isArray(o.material)?o.material:[o.material]))materials.add(m);}});geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());}
-    selected=next;const slug=slugs[next]||{element:'fire'};
-    companion=createSlugModel(THREE,slug,{scale:.148});
-    companion.position.set(0,-.071,.005);companion.rotation.y=2.6;carousel.add(companion);
-    const color=new THREE.Color(slug.color||0xffb85f);glow.color.copy(color);glow.emissive.copy(color);
+  let companion = null, selected = -1, selectedIdentity = null, time = 0;
+  const equipment = new THREE.Group(); equipment.name = 'Equipment tuning'; group.add(equipment);
+  let weaponIdentity = null;
+  function disposeMeshes(root) {
+    const geometries = new Set(), materials = new Set();
+    root.traverse(o => { if (o.isMesh) { geometries.add(o.geometry); for (const m of (Array.isArray(o.material) ? o.material : [o.material])) materials.add(m); } });
+    geometries.forEach(g => g.dispose()); materials.forEach(m => m.dispose());
+  }
+  function setSlug(index) {
+    const next = slugs.length ? (Number.isInteger(index) && index >= 0 && index < slugs.length ? index : 0) : -1;
+    const slug = slugs[next];
+    const identity = slug ? JSON.stringify([slug.id, slug.speciesId, slug.species, slug.modelArchetype, slug.archetype, slug.element, slug.color]) : 'empty';
+    if (next === selected && identity === selectedIdentity) return;
+    if (companion) { carousel.remove(companion); disposeMeshes(companion); companion = null; }
+    selected = next; selectedIdentity = identity;
+    if (slug) {
+      companion = createSlugModel(THREE, slug, { scale: .148 });
+      companion.position.set(0, -.071, .005); companion.rotation.y = 2.6; carousel.add(companion);
+    }
+    const color = new THREE.Color(slug?.color || 0xffb85f); glow.color.copy(color); glow.emissive.copy(color);
+    group.userData.loadedSlugId = slug?.id ?? null;
+  }
+  function setRoster(roster) {
+    slugs = Array.isArray(roster) ? roster : [];
+    setSlug(selected);
+  }
+  function setWeapon(spec = null) {
+    const value = typeof spec === 'string' ? { id: spec } : spec || {};
+    const identity = JSON.stringify([value.id, value.name, value.tier, value.accent, value.color, value.shellColor, value.metalness, value.roughness]);
+    if (identity === weaponIdentity) return;
+    weaponIdentity = identity;
+    // Restore original housing and alignment for the standard blaster. Tuning is
+    // purely visual; cadence, recoil and damage stay with the gameplay catalog.
+    const id = value.id || 'standard';
+    const tier = Math.max(0, Math.min(2, Number(value.tier) || (id === 'breaker' ? 2 : id === 'rapid' ? 1 : 0)));
+    orange.color.set(value.accent || value.color || (id === 'breaker' ? 0xf2a96d : id === 'rapid' ? 0x7cd4f5 : 0xe57831));
+    shell.color.set(value.shellColor || (id === 'breaker' ? 0x3a3331 : id === 'rapid' ? 0x183d52 : 0x263744));
+    shell.metalness = Number.isFinite(value.metalness) ? Math.max(0, Math.min(1, value.metalness)) : .72;
+    shell.roughness = Number.isFinite(value.roughness) ? Math.max(0, Math.min(1, value.roughness)) : .34;
+    silver.color.set(id === 'breaker' ? 0xbfb5a3 : id === 'rapid' ? 0xc5e2e9 : 0xa9bbc1);
+    // These meshes own only their geometry; their materials belong to the gun.
+    for (const child of [...equipment.children]) { equipment.remove(child); child.geometry.dispose(); }
+    if (tier > 0) {
+      for (const side of [-1, 1]) {
+        for (let i = 0; i < (tier === 2 ? 4 : 3); i++) {
+          box(silver, [side * .115, .057, -.36 + i * .045], [tier === 2 ? .027 : .014, .105, .014], undefined, equipment);
+        }
+        box(orange, [side * .086, .172, -.29], [tier === 2 ? .035 : .018, .026, .135], undefined, equipment);
+      }
+      if (tier === 2) {
+        cylinder(shell, .028, .14, 0, .302, -.015, false, .028, equipment);
+        ring(edge, .026, .005, 0, .302, -.09, equipment);
+      } else {
+        box(silver, [0, .286, .06], [.045, .025, .08], undefined, equipment);
+        box(dark, [0, .304, .06], [.032, .01, .06], undefined, equipment);
+      }
+    }
+    group.name = value.name ? `${value.name} slug blaster` : 'Ranger slug blaster';
+    group.userData.weaponId = id; group.userData.weaponTier = tier;
   }
   setSlug(0);
   const muzzle=new THREE.Vector3(0,.055,-.553);
   return {
-    group,muzzle,setSlug,
+    group,muzzle,setSlug,setRoster,setWeapon,
     update(dt,{recoil=0,aiming=false,cooldown=0}={}){
       time+=Math.min(.1,Math.max(0,Number(dt)||0));
       // A little chamber indexing and charging glow show the action inside the housing.
