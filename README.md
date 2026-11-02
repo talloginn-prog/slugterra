@@ -129,3 +129,5 @@ Core modules are `main.js` (rendering, integration and combat), `game-state.js` 
 Recovery points remain `backup/slugterra-rpg-development-2026-11-01` (recovered original), `backup/pre-physics-2026-11-02` (earlier cavern build) and `backup/pre-expansion-2026-11-02` (physics/model/P-view build at `92ca064`). Historical verification remains in [the original rebuild record](docs/verification-2026-11-01.md) and [the physics/model record](docs/verification-physics-models-2026-11-02.md).
 
 This is a playable vertical slice with a complete quest and five connected regions. Full authored character animation, crafting, mounts, multiplayer and a long campaign remain future work. No Avatar models, textures or music are included.
+
+Special thanks to [Starkster on Sketchfab](https://sketchfab.com/parmaryash2599) for the Slugterra blaster and slug-shell 3D designs. Individual model authors and licenses remain listed in the in-game model credits.
