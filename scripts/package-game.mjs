@@ -82,6 +82,10 @@ Warden at the northern Heartstone, then return to Haven to complete the quest.
 CONNECTED CAVERNS
 Approach Haven's passage lifts to Dark Spores (20,30) and Pyrite (-20,30),
 then press E. Both destinations connect back to Haven and to each other.
+Dark Spores connects to Quiet Lawn; Pyrite connects to Snowdance. These two
+new expeditions also connect to each other. Discover Arachnet and Fandango in
+Quiet Lawn and Rammstone in Snowdance. Webs bind, earth shots stagger, and
+Fandango boosts your next other companion. These combat values are RPG design.
 Activate amber checkpoints to choose your safe respawn point. Clear sentinels,
 record surveys and discover Boon Doc and Phosphoro. A rescued Frostcrawler
 waits near Haven's workshop. Use the collection to equip three companions.
@@ -94,10 +98,10 @@ Shots launch at 18 m/s, accelerate and morph at 100 mph (44.7 m/s). Morphed hits
 deal 1.6x damage. Each companion remains busy until it returns to the blaster.
 
 SOUND AND SAVES
-The supplied slugterra-metamorphosis-shot.mp3 is included in this HTML and plays
-automatically for all transformations, including the added companions. No manual import is needed. Its
-1.824-second recording starts about 85 milliseconds in to skip leading silence
-and synchronize playback. The recording was supplied by the user. Separate
+The supplied slugterra-metamorphosis-shot.mp3 starts as soon as you fire. Its
+90 milliseconds of leading silence are skipped. Each shot owns its sequence,
+so transformation does not replay the launch. Velocimorphs activate at 100 mph;
+custom transformation clips still trigger at that threshold. The recording was supplied by the user. Separate
 blaster and impact recordings have not been supplied; those effects use original
 synthesis.
 Settings > Show audio pack accepts your own local effect clips for eight
@@ -111,11 +115,13 @@ recording and original synthesis for the other effects.
 Campaign saves use localStorage key slugterra.campaign.v2, preserving the original
 slugterra.luminous-deep.v1 save as a migration recovery copy. Clearing
 site data removes local progress/audio. Saves do not synchronize across devices.
+Settings offers Auto, 16:9 and ultrawide 21:9 framing plus render-resolution caps
+up to 3440x1440. Frames stay centered and never stretch.
 Settings > Visual quality > Performance reduces render resolution; Ultra adds
 resolution, shadow quality and new-cavern detail. Challenge settings tune combat.
 
 This is an original procedural Slugterra-inspired playable vertical slice with
-one complete original quest and three connected cavern expeditions. This package is a local build
+one complete original quest and five connected cavern expeditions. This package is a local build
 artifact. It does not publish a website or change the repository's remote.
 `;
 

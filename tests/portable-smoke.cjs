@@ -17,6 +17,9 @@ const imageNames = [
   'frost-protoform.png', 'frost-velocimorph.png',
   'glow-protoform.png', 'glow-velocimorph.png',
   'dark-spores-cavern.webp', 'pyrite-cavern.webp',
+  'rammstone-protoform.png', 'rammstone-velocimorph.png',
+  'arachnet-protoform.png', 'arachnet-velocimorph.png',
+  'fandango-protoform.png', 'fandango-velocimorph.png',
 ];
 const timeout = 60000;
 
@@ -124,24 +127,24 @@ async function main() {
 
     await page.keyboard.press('i');
     await page.waitForSelector('.campaign-collection', { timeout });
-    assert.equal(await page.locator('.collection-card').count(), 6);
-    assert.equal(await page.locator('.collection-art [data-form="protoform"]').count(), 6);
+    assert.equal(await page.locator('.collection-card').count(), 9);
+    assert.equal(await page.locator('.collection-art [data-form="protoform"]').count(), 9);
     await page.locator('[data-ready-slug="1"]').click();
     assert.equal(await page.locator('#loadout .slug-slot.selected strong').innerText(), 'Joules', 'arsenal retains selection of an already equipped companion');
-    await imagesDecoded(page, '.collection-art img', 5);
+    await imagesDecoded(page, '.collection-art img', 8);
     await page.locator('[data-form-toggle="velocimorph"]').click();
-    assert.equal(await page.locator('.collection-art [data-form="velocimorph"]').count(), 6);
-    await imagesDecoded(page, '.collection-art img', 5);
+    assert.equal(await page.locator('.collection-art [data-form="velocimorph"]').count(), 9);
+    await imagesDecoded(page, '.collection-art img', 8);
     await page.screenshot({ path: path.join(root, 'test-results/portable-collection.png'), timeout });
     await page.keyboard.press('Escape');
     await page.waitForFunction(() => document.body.dataset.mode === 'playing', undefined, { timeout });
     await page.locator('.cavern-status-button').click();
     await page.waitForSelector('.cavern-atlas', { timeout });
-    assert.equal(await page.locator('.cavern-atlas-card').count(), 3);
+    assert.equal(await page.locator('.cavern-atlas-card').count(), 5);
     await imagesDecoded(page, '.atlas-image img', 2);
     assert.deepEqual(requests, [], 'portable gameplay must not attempt any HTTP(S) request');
     assert.deepEqual(errors, [], 'portable production experience must not report application or loading errors');
-    console.log('PASS: offline collection renders all six species and both forms; atlas reference images decode with no network requests');
+    console.log('PASS: offline collection renders all nine species and both forms; atlas reference images decode with no network requests');
   } finally {
     await browser?.close();
     if (server) await new Promise(resolve => server.close(resolve));

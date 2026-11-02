@@ -2,6 +2,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { createWorld } from './world.js';
 import { createSlugModel } from './models.js';
 import { SLUG_CATALOG } from './content.js';
+import { createExpandedCavern } from './expanded-caverns.js';
 
 /*
  * These are original playable expedition layouts, informed by the inspected
@@ -9,6 +10,7 @@ import { SLUG_CATALOG } from './content.js';
  * The original Luminous Deep remains its own, unchanged seeded expedition.
  */
 export function createCavern(THREE, { id = 'luminous', quality = 'high' } = {}) {
+  if (['quiet-lawn', 'snowdance'].includes(id)) return createExpandedCavern(THREE, { id, quality });
   const legacy = id === 'luminous' || !['dark-spores', 'pyrite'].includes(id);
   if (legacy) id = 'luminous';
   const forest = id === 'dark-spores';
@@ -416,6 +418,7 @@ export function createCavern(THREE, { id = 'luminous', quality = 'high' } = {}) 
     staticMesh(new THREE.TorusGeometry(0.3, 0.05, 5, 14, Math.PI), metal, 16, rescueY + 2.17, 40, null, { z: Math.PI });
   } else {
     gate('luminous', 0, 38, 'Lift to Haven'); gate(forest ? 'pyrite' : 'dark-spores', 35, 25, forest ? 'Lift to Pyrite' : 'Lift to Dark Spores');
+    gate(forest ? 'quiet-lawn' : 'snowdance', -8, 32, forest ? 'Lift to Quiet Lawn' : 'Lift to Snowdance');
     checkpoint(0, 23); person('expedition', 7, 27, forest ? 'Ivo · Field researcher' : 'Sera · Ruins surveyor');
     if (forest) { discovery('doc', -22, -12, 'A Boon Doc in the grove'); survey(-30, -38, 'The Sporeheart survey'); }
     else { discovery('glow', 20, -8, 'A Phosphoro in the ruins'); survey(35, -35, 'The cascade archive'); }

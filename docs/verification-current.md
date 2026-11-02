@@ -1,34 +1,47 @@
-# Physics, supplied models and camera verification — 2 November 2026
+# Caverns, companions and combat continuation — 2 November 2026
 
-This continuation builds on the existing three-cavern campaign at `5db2aeecd751da90c192d684527057f309db2cdc`. Tag `backup/pre-physics-2026-11-02` preserves that version. The earlier recovered development branch remains available; see `verification-2026-11-01.md` for its historical checks.
+This continuation starts from commit `92ca064df6d92cf6fec7475be419e60d58aec3c9`, retained by tag `backup/pre-expansion-2026-11-02`. It continues the same repository, original quest, collision system, uploaded models and first-/third-person controls.
 
-## Preserved data and behavior
+The earlier **57-test physics/model verification** remains intact in [verification-physics-models-2026-11-02.md](verification-physics-models-2026-11-02.md). The first cavern rebuild has its own [historical record](verification-2026-11-01.md). Their test totals and artifact sizes describe those earlier commits, rather than the current expansion.
 
-- All ten supplied model ZIPs are stored unchanged, including distinct exports with similar names. Seven embedded runtime GLBs are verified separately. Hashes and conversion details are recorded in the model manifests and `model-imports-2026-11-02.md`.
-- The supplied transformation MP3 remains byte-for-byte identical: SHA-256 `7ae14c8c32011e6b983afdf2d62be18f7e8a0bacc12c071d47c061e7a23703ae`.
-- Original quests, equipment statistics, companion return rules, save migration and imported-audio storage are retained. Changing the camera view keeps the live projectile, audio instance and campaign progress.
-- The uploaded Eli rig supplies the third-person appearance. No authored animation clips were supplied; the holding pose and walking motion are procedural.
+## Current behavior
 
-## Focused checks
+- All three imported blasters use inspected source barrel direction, preserving the 0.72 m length and `(0, 0.055, -0.553)` muzzle contract. Real GLB barrel/chamber/grip anchors are tested across first-/third-person mount headings.
+- The supplied combined shot recording starts at launch, with its 90 ms leading silence skipped. A per-shot receipt prevents a second launch playback at transformation and permits cancellation when close cover stops a Protoform. Visual transformation retains the 100 mph / 44.7 m/s threshold; personal transformation overrides use that event.
+- Original armored rivals patrol, pursue, search last-seen positions, strafe, reposition and return to their territory. Visible aim tells and recovery preserve counterplay; movement and line of sight use solid scenery.
+- Five connected caverns retain the original Haven, Dark Spores and Pyrite and add Quiet Lawn and Snowdance. Their reciprocal routes preserve per-cavern progress, checkpoints and the original Haven quest.
+- Nine companion species retain the original six and add Rammstone, Arachnet and Fandango. Their sourced powers inform ramming/knockback, movement binding and a one-shot support boost. Fandango restores up to 14 shield and grants 25% extra damage to the next successful non-energy shot within six seconds; failed shots and renewed support do not consume or stack that bonus incorrectly.
+- Auto, 16:9 and 21:9 framing and four render-limit settings persist independently of quality. The 21:9-labelled ultrawide preset uses the requested native 3440:1440 ratio. Fitting centers the view without stretching, and the actual drawing buffer remains at most 3440 × 1440 even on high-density displays.
+- The field interface retains mission, map, companion, collection, both-form artwork, services and touch access with the redesigned visual treatment.
 
-| Check | Coverage |
-| --- | --- |
-| `npm test` | **57 passed**: rules, saves, input, audio and fixed-step physics, plus capsule/triangle collision, solid-scene tagging and camera obstruction unit tests |
-| `npm run verify:models` | **Passed**: original ZIP sizes/hashes and seven runtime GLBs, including embedded buffers/textures and recorded triangle counts |
-| `npm run test:collision` | All seven models load; imported equipment keeps its calibrated muzzle; actual keyboard movement stops at the merchant counter and slides around it; landing and jumping use an instanced stepping stone; gate openings permit real travel in both directions; no application errors |
-| `npm run test:camera` | P switches views, repeated keydown does not toggle again, actual deformed Eli geometry measures 1.85 m with grounded feet, movement/aiming work, switching during a live shot preserves companion/audio/progress, rear camera retracts around actual cover and terrain, HUD button switches back; no application errors |
-| `npm run test:browser` | **Passed**: complete original quest, all three shard encounters, Hollow Warden and ending, input chords, 100 mph transformation/return, audio import/removal, save restoration and real mobile touch controls; no application errors |
-| `npm run test:lifecycle` | **Passed**: live quality changes preserve combat, saves, position and audio; old instance buffers and Eli bone textures are released; replacement Eli reuses shared geometry/materials; travel and current-cavern footstep audio work |
-| `npm run package:game` | **Passed**: production build and self-contained HTML/ZIP; final HTML is 21,422,685 bytes and ZIP is 11,112,788 bytes |
-| `npm run test:portable` | **Passed**: all twelve reference images, seven runtime GLBs and supplied MP3 are embedded byte-for-byte; offline WebGL play and P switching work; collection/forms/atlas images decode without HTTP requests or development hooks |
-| `npm run test:campaign` | **Passed**: purchases/training, Frostcrawler/Doc/Phosphoro discovery and transformation, both new-cavern combat encounters, checkpoints/surveys, gates, persistent rewards, non-Haven reload, imported audio restoration and mobile collection/atlas layouts |
+Research evidence, confidence limits and the six newly downloaded official companion images are documented in [references/expansion-2026-11-02.md](references/expansion-2026-11-02.md). New cavern names have episode-catalogue evidence; their playable landscapes, atlas concepts, route graph, NPCs and encounters are original designs. Numerical ability tuning remains separate from canonical powers.
 
-All listed checks passed in system Chromium with software WebGL. Transformation fixtures verify a clear acceleration lane while scene collision remains active. Browser test screenshots are generated under ignored `test-results/`. Run GPU-heavy browser suites one at a time in this environment.
+## Final validation record
 
-## Physical coverage and limits
+The owner agent fills final results after integration. Test coverage below describes the intended checks and does not claim an unrun full-suite result.
 
-The character capsule collides with explicitly selected solid meshes and instances. Terrain remains a separate heightfield. Rocks, trunks, mushroom structures, tents, ruins, counters, gate frames and NPC collision proxies are physical; grass, particles, water effects, glow beams and small ornaments remain decorative. Contact support permits standing on solid geometry instead of snapping through it to terrain. The rear camera checks scene geometry and terrain along its retraction path.
+| Command / check | Coverage | Final result |
+| --- | --- | --- |
+| `npm test` | Existing rules/saves/input/audio/physics; actual-asset blaster direction; display caps; expanded routes, discovery/equipment, support consumption/expiry and settings persistence; new world/slug models and enemy behavior | Passed: 82 tests |
+| `npm run verify:models` | Ten unchanged original ZIPs and seven embedded runtime GLBs | Passed: all ten archives and seven GLBs unchanged |
+| `npm run test:browser` | Complete original Haven quest, combat, ending, saves, input chords and mobile touch | Passed: original quest, ending, saves and touch controls |
+| `npm run test:campaign` | Services, training, collection, transformations, guards, discovery, surveys, routes and imported-audio restore | Passed: services, combat, discoveries, travel, non-Haven reload, equipment and imported-audio restoration |
+| `npm run test:collision` | Actual keyboard collision/sliding, geometry support, gate travel and imported models | Passed: keyboard wall sliding, instanced-platform landing/jumping and open gate traversal |
+| `npm run test:camera` | P switching, real Eli skin dimensions/feet, aiming, live-projectile continuity and obstruction-safe camera | Passed: P switching, skin bounds, aiming, active-shot continuity and obstruction retraction |
+| `npm run test:lifecycle` | Quality/travel state preservation, instance-buffer and skeleton-texture cleanup, shared resource reuse and surfaces | Passed: quality/travel retain state and release owned instance/skeleton resources |
+| Production build / portable package | Current built source, embedded assets and offline play | Passed: 22,417,941-byte HTML and 11,834,499-byte ZIP; eighteen images, seven GLBs and MP3 embedded unchanged; offline play passes |
+| Expansion browser inspection | Five-region travel/discoveries, new powers, moving rivals, shot timing, redesigned UI and ultrawide settings | Passed: real E gates/discoveries, roaming slingers, launch/morph timing, 3440x1440 cap and mobile UI |
 
-Imported resources are shared through a page-lifetime cache. Scene and projectile cleanup preserve those shared resources while disposing scene-owned geometry, materials and cloned skeleton bone textures. Eli normalization measures deformed skin vertices after updating the rig, preventing stale bind-pose bounds from producing a floating, undersized character. Procedural models remain available while imports load or if a runtime model fails. This work adds no artist-authored character animation or new ammunition rules.
+`npm run test:abilities` also passed real input/projectile checks for Fandango shield/support consumption, Arachnet visible binding and stopped movement, and Rammstone stagger/displacement through scene collision.
 
-The existing portable packaging embeds all runtime assets into one HTML file. Managed Chromium blocks direct `file://` navigation, so the portable test uses the documented loopback fallback and then disables network access during play. Consumer-browser file launching and RTX 5060 Ti frame rates have not been measured in this cloud environment.
+One initial full-campaign run timed out at the imported-audio reload wait. A focused reload and subsequent complete campaign run restored the saved clip successfully; the complete rerun produced no application errors. Reload diagnostics remain in the browser test for future failures.
+
+Run GPU-heavy browser suites one at a time with software WebGL. Screenshots and local portable artifacts remain in ignored `test-results/` and `.local/downloads/`.
+
+## Preserved assets and practical limits
+
+All ten supplied ZIPs, seven runtime GLBs, supplied attribution, original companion identities and the bundled MP3 are retained. The expected MP3 SHA-256 is `7ae14c8c32011e6b983afdf2d62be18f7e8a0bacc12c071d47c061e7a23703ae`. Existing campaign save migration and browser-local personal audio remain in place. The original Haven ending and earlier discoveries remain available alongside the expansion.
+
+The character capsule collides with selected solid meshes and instances; terrain remains a heightfield. Decorative grass, water effects, glow and small ornaments remain permeable. Shared imported geometry/materials belong to a page-lifetime cache; cloned skeleton bone textures are disposed with replaced instances. Eli uses procedural movement because no authored character-animation clips were supplied.
+
+The portable package embeds runtime data into one HTML file. Managed Chromium requires the documented loopback fallback for file-URL testing; offline play must then make no HTTP requests. Consumer file launching and RTX 5060 Ti performance have not been measured in this environment. Saves and personal audio belong to a browser origin and do not synchronize between devices or hostnames.

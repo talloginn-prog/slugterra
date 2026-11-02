@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "checked_at": "2026-11-01",
+  "checked_at": "2026-11-02",
   "path_base": "repository root; relative_path_from_manifest resolves from docs/references",
   "purpose": "Original source images for an attributed in-game reference atlas and production visual study; no image pixels changed.",
   "assets": [
@@ -325,6 +325,144 @@
       "visually_inspected": true,
       "visual_observations": "Broad dark navy spotted ray-like mantle trails left of a green face, with long arched stalks ending in luminous white/cyan forms. The head, mouth and two stalk lights define the form.",
       "uncertainty_notes": "Transformed reference is not labeled Megamorph; source-image appearance does not establish numeric game behavior."
+    },
+    {
+      "id": "rammstone-protoform",
+      "subject": "Rammstone protoform",
+      "source_page": "https://dolimg.com/media/en-US/games/html5/slugarsenal/rammstone.html",
+      "asset_url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Rammstone/Opening_Rammstone.png",
+      "provenance": "Exact normal/transformed image path supplied by the Disney-hosted legacy official Slug Arsenal profile, NerdCorps author metadata.",
+      "http_status": 200,
+      "content_type": "image/png",
+      "dimensions": [
+        280,
+        340
+      ],
+      "image_format": "PNG",
+      "mode": "RGBA",
+      "bytes": 83850,
+      "sha256": "0865d4c2c57586ff98dc0b8e5aa0c491b48efc740875bbc7450d483424d6a97e",
+      "visually_inspected": true,
+      "visual_observations": "Red hood-like shell, cream face/belly, brown eyes, short curved blue horns, broad grin and small tooth tips.",
+      "uncertainty_notes": "Reference artwork establishes appearance; numeric combat tuning, unlock location and cooldowns are original RPG design.",
+      "repository_path": "src/assets/references/rammstone-protoform.png",
+      "relative_path_from_manifest": "../../src/assets/references/rammstone-protoform.png",
+      "source_confidence": "primary-legacy-official-arsenal"
+    },
+    {
+      "id": "rammstone-velocimorph",
+      "subject": "Rammstone velocimorph",
+      "source_page": "https://dolimg.com/media/en-US/games/html5/slugarsenal/rammstone.html",
+      "asset_url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Rammstone/Rammstone_transformmatte2.png",
+      "provenance": "Exact normal/transformed image path supplied by the Disney-hosted legacy official Slug Arsenal profile, NerdCorps author metadata.",
+      "http_status": 200,
+      "content_type": "image/png",
+      "dimensions": [
+        312,
+        340
+      ],
+      "image_format": "PNG",
+      "mode": "RGBA",
+      "bytes": 158528,
+      "sha256": "6383a3e630d1f8bedc90db8dd0e7b5f3b1ec175e82b176bb189aee5ee6559f6b",
+      "visually_inspected": true,
+      "visual_observations": "Muscular red ram-like body, cream chest, enormous swept blue horns and large slate-blue rocky fists.",
+      "uncertainty_notes": "Reference artwork establishes appearance; numeric combat tuning, unlock location and cooldowns are original RPG design.",
+      "repository_path": "src/assets/references/rammstone-velocimorph.png",
+      "relative_path_from_manifest": "../../src/assets/references/rammstone-velocimorph.png",
+      "source_confidence": "primary-legacy-official-arsenal"
+    },
+    {
+      "id": "arachnet-protoform",
+      "subject": "Arachnet protoform",
+      "source_page": "https://dolimg.com/media/en-US/games/html5/slugarsenal/arachnet.html",
+      "asset_url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Arachnet/Opening_Arachnet.png",
+      "provenance": "Exact normal/transformed image path supplied by the Disney-hosted legacy official Slug Arsenal profile, NerdCorps author metadata.",
+      "http_status": 200,
+      "content_type": "image/png",
+      "dimensions": [
+        312,
+        340
+      ],
+      "image_format": "PNG",
+      "mode": "RGBA",
+      "bytes": 72225,
+      "sha256": "222b5cd54e920ef6173db3c3df6f61d6daa604b4f646dcaacf097153901532a5",
+      "visually_inspected": true,
+      "visual_observations": "Purple shell, pale lime belly, large side eyes, four small dark forehead eyes and curled purple appendages.",
+      "uncertainty_notes": "Reference artwork establishes appearance; numeric combat tuning, unlock location and cooldowns are original RPG design.",
+      "repository_path": "src/assets/references/arachnet-protoform.png",
+      "relative_path_from_manifest": "../../src/assets/references/arachnet-protoform.png",
+      "source_confidence": "primary-legacy-official-arsenal"
+    },
+    {
+      "id": "arachnet-velocimorph",
+      "subject": "Arachnet velocimorph",
+      "source_page": "https://dolimg.com/media/en-US/games/html5/slugarsenal/arachnet.html",
+      "asset_url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Arachnet/arachnet_transformmatte.png",
+      "provenance": "Exact normal/transformed image path supplied by the Disney-hosted legacy official Slug Arsenal profile, NerdCorps author metadata.",
+      "http_status": 200,
+      "content_type": "image/png",
+      "dimensions": [
+        312,
+        340
+      ],
+      "image_format": "PNG",
+      "mode": "RGBA",
+      "bytes": 181674,
+      "sha256": "f2706ae726aa376dfee1df16129eb8018769388aa75adc074f4d976d151dab5b",
+      "visually_inspected": true,
+      "visual_observations": "Purple and lime spider-like form with many long angular limbs, fine feelers and visible white web strands.",
+      "uncertainty_notes": "Reference artwork establishes appearance; numeric combat tuning, unlock location and cooldowns are original RPG design.",
+      "repository_path": "src/assets/references/arachnet-velocimorph.png",
+      "relative_path_from_manifest": "../../src/assets/references/arachnet-velocimorph.png",
+      "source_confidence": "primary-legacy-official-arsenal"
+    },
+    {
+      "id": "fandango-protoform",
+      "subject": "Fandango protoform",
+      "source_page": "https://dolimg.com/media/en-US/games/html5/slugarsenal/fandango.html",
+      "asset_url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Fandango/Opening_Fandango_CP.png",
+      "provenance": "Exact normal/transformed image path supplied by the Disney-hosted legacy official Slug Arsenal profile, NerdCorps author metadata.",
+      "http_status": 200,
+      "content_type": "image/png",
+      "dimensions": [
+        312,
+        340
+      ],
+      "image_format": "PNG",
+      "mode": "RGBA",
+      "bytes": 67155,
+      "sha256": "3d79a7c646e061fab151add68a4d46a7a7bb310807e5e4e60f1a8f331f4a3266",
+      "visually_inspected": true,
+      "visual_observations": "Maroon head/back with short dark lobes, bright teal belly, violet eye details and small uneven teeth.",
+      "uncertainty_notes": "Reference artwork establishes appearance; numeric combat tuning, unlock location and cooldowns are original RPG design.",
+      "repository_path": "src/assets/references/fandango-protoform.png",
+      "relative_path_from_manifest": "../../src/assets/references/fandango-protoform.png",
+      "source_confidence": "primary-legacy-official-arsenal"
+    },
+    {
+      "id": "fandango-velocimorph",
+      "subject": "Fandango velocimorph",
+      "source_page": "https://dolimg.com/media/en-US/games/html5/slugarsenal/fandango.html",
+      "asset_url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Fandango/Fandango_transformmatte.png",
+      "provenance": "Exact normal/transformed image path supplied by the Disney-hosted legacy official Slug Arsenal profile, NerdCorps author metadata.",
+      "http_status": 200,
+      "content_type": "image/png",
+      "dimensions": [
+        312,
+        340
+      ],
+      "image_format": "PNG",
+      "mode": "RGBA",
+      "bytes": 133907,
+      "sha256": "075f7e87e59a39762e020bb4ffa089f087dd6827816e2c5bd20049864429f69b",
+      "visually_inspected": true,
+      "visual_observations": "Long cyan luminous energy creature with a maroon dorsal stripe, long swept appendages and a bright glowing aura.",
+      "uncertainty_notes": "Reference artwork establishes appearance; numeric combat tuning, unlock location and cooldowns are original RPG design.",
+      "repository_path": "src/assets/references/fandango-velocimorph.png",
+      "relative_path_from_manifest": "../../src/assets/references/fandango-velocimorph.png",
+      "source_confidence": "primary-legacy-official-arsenal"
     }
   ],
   "source_limits": [

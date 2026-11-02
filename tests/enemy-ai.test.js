@@ -32,7 +32,8 @@ test('an enemy visibly winds up, fires once, and offers a recovery window', () =
   assert.deepEqual(shot.aimPoint, target);
   const recovery = step(brain, brain.tuning.recovery - 0.04);
   assert.ok(recovery.every(intent => intent.phase === 'recovery' && !intent.fire));
-  assert.ok(recovery.every(intent => intent.move.x === 0 && intent.move.z === 0));
+  assert.ok(recovery.some(intent => Math.hypot(intent.move.x, intent.move.z) > 0), 'recovery keeps the guard mobile without firing');
+  assert.ok(recovery.every(intent => Math.hypot(intent.move.x, intent.move.z) <= .5));
   const next = until(brain, intent => intent.fire);
   assert.equal(next.fire, true);
 });
@@ -53,7 +54,7 @@ test('cover blocks attacks and cancels a committed tell into recovery', () => {
   const covered = { ...input, lineOfSight: false };
   const attempts = step(brain, 4, covered);
   assert.ok(attempts.every(intent => !intent.fire));
-  assert.equal(attempts.at(-1).phase, 'alert');
+  assert.equal(attempts.at(-1).phase, 'patrol', 'unseen targets do not grant omniscient pursuit');
   until(brain, intent => intent.phase === 'windup');
   const interrupted = brain.update(1 / 120, covered);
   assert.equal(interrupted.phase, 'recovery');
@@ -130,4 +131,47 @@ test('invalid time and positions cannot advance an attack or produce invalid mov
   brain.reset();
   assert.equal(brain.phase, 'patrol');
   assert.equal(brain.update(0, { position }).fire, false);
+});
+
+
+test('unengaged guards actually traverse a bounded patrol circuit', () => {
+  const home = { x: 7, z: -4 }, brain = createEnemyBrain({ home });
+  const position = { ...home }, positions = [];
+  for (let tick = 0; tick < 120 * 24; tick++) {
+    const intent = brain.update(1 / 120, { position, target: { x: 90, z: 90 }, lineOfSight: false });
+    assert.equal(intent.phase, 'patrol'); assert.equal(intent.fire, false);
+    position.x += intent.move.x * 3 / 120; position.z += intent.move.z * 3 / 120;
+    positions.push({ ...position });
+    assert.ok(Math.hypot(position.x - home.x, position.z - home.z) <= brain.tuning.patrolRadius + .1);
+  }
+  assert.ok(positions.some(p => Math.hypot(p.x - home.x, p.z - home.z) > 3));
+  assert.ok(Math.max(...positions.map(p => p.z)) - Math.min(...positions.map(p => p.z)) > 4);
+});
+
+test('guards close distant targets, sidestep at combat range and back away from close threats', () => {
+  const far = createEnemyBrain().update(1 / 120, { position, target: { x: 17, y: 2, z: 0 }, lineOfSight: true });
+  assert.ok(far.move.x > .9);
+  const lateral = createEnemyBrain().update(1 / 120, { position, target: { x: 8, y: 2, z: 0 }, lineOfSight: true });
+  assert.ok(Math.abs(lateral.move.z) > .5); assert.equal(lateral.move.x, 0);
+  const retreat = createEnemyBrain().update(1 / 120, { position, target: { x: 2, y: 2, z: 0 }, lineOfSight: true });
+  assert.ok(retreat.move.x < -.5);
+});
+
+test('a guard searches its last sighting without tracking a hidden player through cover', () => {
+  const brain = createEnemyBrain(); brain.update(1 / 120, input);
+  const hidden = { position, target: { x: -6, y: 2, z: 8 }, lineOfSight: false };
+  const searching = brain.update(1 / 120, hidden);
+  assert.equal(searching.phase, 'search'); assert.ok(searching.move.x > 0);
+  assert.deepEqual(searching.lookAt, target);
+  assert.ok(step(brain, brain.tuning.searchDuration + .1, hidden).every(intent => !intent.fire));
+  assert.equal(brain.phase, 'patrol');
+});
+
+test('blocked patrol feedback selects another route instead of walking into the same wall forever', () => {
+  const brain = createEnemyBrain();
+  const initial = brain.update(1 / 120, { position, lineOfSight: false });
+  const attempts = step(brain, .8, { position, blocked: true, lineOfSight: false });
+  const rerouted = attempts.at(-1);
+  assert.equal(rerouted.phase, 'patrol');
+  assert.ok(Math.abs(initial.move.x - rerouted.move.x) + Math.abs(initial.move.z - rerouted.move.z) > .3);
 });

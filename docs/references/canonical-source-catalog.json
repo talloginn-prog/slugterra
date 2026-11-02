@@ -179,6 +179,85 @@
       },
       "gameplayStats": null,
       "formalClass": null
+    },
+    {
+      "id": "rammstone",
+      "name": "Rammstone",
+      "sourceNumber": "004",
+      "sourceElement": "Earth",
+      "sourcePower": "Ramming",
+      "sourceRarityLabel": "Common",
+      "habitat": "Rocky crevasses",
+      "famousNamedSlug": "Bludgeon",
+      "sourceUrl": "https://dolimg.com/media/en-US/games/html5/slugarsenal/rammstone.html",
+      "retrievalStatus": 200,
+      "visualReferences": {
+        "protoform": {
+          "url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Rammstone/Opening_Rammstone.png",
+          "visuallyVerified": true,
+          "repositoryPath": "src/assets/references/rammstone-protoform.png"
+        },
+        "velocimorph": {
+          "url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Rammstone/Rammstone_transformmatte2.png",
+          "visuallyVerified": true,
+          "repositoryPath": "src/assets/references/rammstone-velocimorph.png"
+        }
+      },
+      "gameplayStats": null,
+      "formalClass": null
+    },
+    {
+      "id": "arachnet",
+      "name": "Arachnet",
+      "sourceNumber": "009",
+      "sourceElement": "Earth",
+      "sourcePower": "Spinning webbing and nets",
+      "sourceRarityLabel": "Uncommon",
+      "habitat": "Nests in high cliff faces",
+      "famousNamedSlug": "Spinner",
+      "sourceUrl": "https://dolimg.com/media/en-US/games/html5/slugarsenal/arachnet.html",
+      "retrievalStatus": 200,
+      "visualReferences": {
+        "protoform": {
+          "url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Arachnet/Opening_Arachnet.png",
+          "visuallyVerified": true,
+          "repositoryPath": "src/assets/references/arachnet-protoform.png"
+        },
+        "velocimorph": {
+          "url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Arachnet/arachnet_transformmatte.png",
+          "visuallyVerified": true,
+          "repositoryPath": "src/assets/references/arachnet-velocimorph.png"
+        }
+      },
+      "gameplayStats": null,
+      "formalClass": null
+    },
+    {
+      "id": "fandango",
+      "name": "Fandango",
+      "sourceNumber": "016",
+      "sourceElement": "Light",
+      "sourcePower": "Boosts slug energy",
+      "sourceRarityLabel": "Common",
+      "habitat": "Found all over Slugterra",
+      "famousNamedSlug": null,
+      "sourceUrl": "https://dolimg.com/media/en-US/games/html5/slugarsenal/fandango.html",
+      "retrievalStatus": 200,
+      "visualReferences": {
+        "protoform": {
+          "url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Fandango/Opening_Fandango_CP.png",
+          "visuallyVerified": true,
+          "repositoryPath": "src/assets/references/fandango-protoform.png"
+        },
+        "velocimorph": {
+          "url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Fandango/Fandango_transformmatte.png",
+          "visuallyVerified": true,
+          "repositoryPath": "src/assets/references/fandango-velocimorph.png"
+        }
+      },
+      "gameplayStats": null,
+      "formalClass": null,
+      "sourceCaution": "The legacy profile names Beeker; that ambiguous named-slug field is not used to redefine the existing AquaBeek character or game companion."
     }
   ],
   "legacyInstanceMap": {

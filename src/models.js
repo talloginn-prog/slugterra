@@ -71,6 +71,8 @@ function kindOf(slug) {
     frostcrawler: 'ice', frost: 'ice', chiller: 'ice', ice: 'ice',
     'boon-doc': 'healing', boondoc: 'healing', doc: 'healing', healing: 'healing',
     phosphoro: 'light', glow: 'light', glimmer: 'light', light: 'light',
+    rammstone: 'earth', earth: 'earth', arachnet: 'web', web: 'web',
+    fandango: 'energy', energy: 'energy',
   };
   const normalize = value => String(value || '').toLowerCase().trim().replace(/[_\s]+/g, '-');
   if (typeof slug === 'object' && slug !== null) {
@@ -238,10 +240,107 @@ function createAdditionalSlugModel(THREE, slug, kind, { scale, morphed }) {
   return group;
 }
 
+// New species follow the inspected legacy official arsenal artwork. Geometry
+// and animation are original, while colors and species silhouettes retain the
+// red/tan ram, purple/green spider and red/cyan energy companion identities.
+function createExpansionSlugModel(THREE, slug, kind, { scale, morphed }) {
+  const b = helpers(THREE), { group, material, egg, tube, shape } = b;
+  const ram = kind === 'earth', spider = kind === 'web';
+  const red = material('carapace', ram ? 0xa71937 : spider ? 0x7a239d : 0xa62e42, { roughness: .5 });
+  const belly = material('belly', ram ? 0xf3d2a4 : spider ? 0xc5e58b : 0x4ed8d5, { roughness: .52 });
+  const dark = material('joint', ram ? 0x6e1230 : spider ? 0x36164f : 0x722436);
+  const horn = material('horn', ram ? 0x2c6b8c : spider ? 0x49205e : 0x6b2733, { roughness: .42 });
+  const white = material('eyes', 0xfff7e9, { roughness: .3 });
+  const pupil = material('pupil', 0x171224, { roughness: .22 });
+  const iris = material('iris', ram ? 0x845130 : 0x6847a3, { roughness: .28 });
+  const glow = material('energy', 0x96ffff, { glow: 0x3df4ee, intensity: 1.1, roughness: .3 });
+  const eyes = (y, z, size = 1) => {
+    for (const s of [-1, 1]) {
+      egg(white, [s * .12 * size, y, z], [.1 * size, .115 * size, .042 * size], [0, -s * .18, -s * .18]);
+      egg(iris, [s * .115 * size, y, z - .036 * size], [.057 * size, .073 * size, .018 * size]);
+      egg(pupil, [s * .108 * size, y, z - .052 * size], [.033 * size, .05 * size, .011 * size]);
+      egg(white, [s * .105 * size - .012, y + .035 * size, z - .061 * size], [.018 * size, .012 * size, .007 * size]);
+    }
+  };
+  const mouth = (y, z, width = .15) => {
+    egg(pupil, [0, y, z], [width, .058, .023]);
+    for (const s of [-1, 1]) shape(white, [[-.026, .027], [.026, .027], [.015, -.035], [-.014, -.035]], .014, [s * width * .6, y + .012, z - .024]);
+  };
+  if (!morphed) {
+    egg(red, [0, .34, .025], [.245, .35, .21]);
+    egg(red, [0, .565, -.015], [.268, .205, .205]);
+    egg(belly, [0, .275, -.164], [.198, .275, .057]);
+    egg(belly, [0, .51, -.168], [.218, .15, .064]);
+    for (const s of [-1, 1]) {
+      egg(belly, [s * .17, .035, .015], [.092, .035, .115]);
+      tube(red, [[s * .21, .25, .01], [s * .26, .18, -.015], [s * .27, .29, -.03]], .022);
+      if (ram) tube(horn, [[s * .14, .71, .035], [s * .21, .8, .03], [s * .26, .84, -.025], [s * .31, .77, -.06]], .035);
+      else tube(horn, [[s * .13, .72, .03], [s * .2, .8, .01], [s * .26, .79, -.025], [s * .29, .73, -.03]], .018);
+    }
+    eyes(.575, -.205, ram ? 1 : 1.04); mouth(.43, -.223, ram ? .19 : .155);
+    if (ram) {
+      tube(dark, [[-.23, .67, -.174], [0, .705, -.19], [.23, .66, -.174]], .024);
+      for (const s of [-1, 1]) shape(red, [[0, 0], [s * .11, .06], [s * .02, .16]], .025, [s * .225, .58, .025]);
+    } else if (spider) {
+      for (const [x, y] of [[-.065, .735], [.065, .735], [-.05, .68], [.05, .68]]) egg(pupil, [x, y, -.16], [.025, .032, .017]);
+    } else {
+      egg(red, [0, .63, -.17], [.19, .14, .042]);
+      for (const s of [-1, 1]) egg(pupil, [s * .055, .72, -.18], [.012, .014, .008]);
+      eyes(.58, -.21);
+    }
+  } else if (ram) {
+    egg(red, [0, .11, .10], [.36, .29, .65]);
+    egg(belly, [0, -.04, -.10], [.29, .14, .48]);
+    egg(red, [0, .21, -.43], [.34, .25, .3]);
+    egg(belly, [0, .05, -.58], [.29, .17, .16]);
+    eyes(.255, -.665, .92); mouth(.075, -.73, .175);
+    for (const s of [-1, 1]) {
+      tube(horn, [[s * .21, .38, -.42], [s * .38, .65, -.37], [s * .52, .88, -.50], [s * .48, .99, -.70], [s * .33, .82, -.82]], .105);
+      tube(red, [[s * .29, .12, -.19], [s * .51, .08, -.32], [s * .68, .07, -.65]], .14);
+      egg(red, [s * .67, .08, -.65], [.22, .17, .23]);
+      const fist = b.add(new THREE.DodecahedronGeometry(1, 0), horn, [s * .7, .08, -.84], [.22, .18, .16]); fist.rotation.z = s * .2;
+      tube(dark, [[s * .20, -.04, .32], [s * .38, -.05, .47], [s * .39, -.02, .26]], .08);
+    }
+  } else if (spider) {
+    egg(dark, [0, .11, .18], [.35, .23, .53]);
+    egg(red, [0, .16, -.3], [.31, .22, .3]);
+    egg(belly, [0, -.01, -.24], [.24, .10, .34]);
+    eyes(.245, -.535, 1.02); mouth(.08, -.595, .19);
+    for (const [x, y] of [[-.075, .385], [.075, .385], [-.055, .33], [.055, .33]]) egg(pupil, [x, y, -.49], [.028, .034, .02]);
+    for (const s of [-1, 1]) for (let i = 0; i < 4; i++) {
+      const z = -.38 + i * .23, reach = .66 + Math.sin(i * .85) * .24;
+      tube(belly, [[s * .24, .13, z], [s * .48, .28 + i * .045, z - .08], [s * reach, .42 + (i % 2) * .12, z - .12]], .035);
+      tube(red, [[s * reach, .42 + (i % 2) * .12, z - .12], [s * (reach + .08), .2, z - .25], [s * (reach - .02), -.08, z - .32]], .047);
+    }
+    const silk = material('silk', 0xf3ffe9, { glow: 0x92bd9e, intensity: .2 });
+    for (const s of [-1, 1]) tube(silk, [[s * .18, .06, -.58], [s * .38, -.03, -.85], [s * .57, .06, -1]], .006);
+    for (let i = 0; i < 3; i++) { const z = -.69 - i * .11, w = .28 + i * .14; tube(silk, [[-w, .03, z], [0, -.025, z - .04], [w, .03, z]], .006); }
+  } else {
+    egg(belly, [0, .08, .03], [.31, .26, .68]);
+    egg(red, [0, .25, .16], [.31, .16, .61]);
+    egg(belly, [0, .16, -.46], [.29, .23, .3]);
+    egg(red, [0, .325, -.4], [.235, .11, .25]);
+    eyes(.215, -.66, 1.08); mouth(.035, -.72, .18);
+    for (const s of [-1, 1]) {
+      tube(belly, [[s * .25, .10, -.12], [s * .42, .04, -.2], [s * .43, -.13, -.44]], .065);
+      for (let j = 0; j < 3; j++) tube(belly, [[s * .43, -.13, -.44], [s * (.4 + j * .055), -.23, -.49], [s * (.4 + j * .055), -.22, -.58]], .017);
+      shape(red, [[0, -.11], [s * .30, .02], [s * .55, .48], [s * .18, .30], [0, .39]], .04, [s * .16, .12, .27], [Math.PI / 2, 0, 0]);
+      tube(glow, [[s * .26, .17, .40], [s * .32, .21, .64], [s * .23, .19, .88]], .027);
+      for (let j = 0; j < 4; j++) egg(red, [s * .18, .17 + j % 2 * .03, -.38 + j * .17], [.025, .018, .035]);
+    }
+  }
+  b.bake(); group.scale.setScalar(scale);
+  const archetype = ram ? 'rammstone' : spider ? 'arachnet' : 'fandango';
+  group.name = `${slug?.species || archetype} ${morphed ? 'Velocimorph' : 'companion'}`;
+  Object.assign(group.userData, { kind, archetype, morphed, form: morphed ? 'velocimorph' : 'protoform' });
+  return group;
+}
+
 export function createSlugModel(THREE, slug, { scale = 1, morphed = false } = {}) {
   const imported = applyImportedSlug(THREE, slug, { scale, morphed });
   if (imported) return imported;
   const kind = kindOf(slug);
+  if (['earth', 'web', 'energy'].includes(kind)) return createExpansionSlugModel(THREE, slug, kind, { scale, morphed });
   if (!['fire', 'electric', 'water'].includes(kind)) return createAdditionalSlugModel(THREE, slug, kind, { scale, morphed });
   const b = helpers(THREE), { group, material, egg, tube, shape, curveShape } = b;
   const electric = kind === 'electric', water = kind === 'water';

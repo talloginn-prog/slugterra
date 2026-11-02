@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { createCavern } from '../src/caverns.js';
+import { CAVERNS } from '../src/content.js';
 
 function solids(world) {
   const result = [];
@@ -14,7 +15,7 @@ function cast(objects, origin, direction, distance = 150) {
 }
 
 test('each cavern exposes physical structures without turning terrain, water or foliage into walls', () => {
-  for (const id of ['luminous', 'dark-spores', 'pyrite']) {
+  for (const id of Object.keys(CAVERNS)) {
     const world = createCavern(THREE, { id, quality: 'low' });
     try {
       assert.equal(world.collisionReady, true);
@@ -33,7 +34,7 @@ test('each cavern exposes physical structures without turning terrain, water or 
 });
 
 test('passage gates have physical frames and open centers instead of filled collision cylinders', () => {
-  for (const id of ['luminous', 'dark-spores', 'pyrite']) {
+  for (const id of Object.keys(CAVERNS)) {
     const world = createCavern(THREE, { id, quality: 'low' });
     try {
       const physical = solids(world);

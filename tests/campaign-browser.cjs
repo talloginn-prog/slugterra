@@ -205,7 +205,12 @@ async function main() {
     await page.reload({ waitUntil: 'networkidle' });
     await page.waitForFunction(() => window.__SLUGTERRA__?.world.id === 'dark-spores', undefined, { timeout });
     await page.locator('#continue-button').click();
-    await page.waitForFunction(() => window.__SLUGTERRA__.mode === 'playing' && window.__SLUGTERRA__.audio.getStatus().clips.includes('blaster'), undefined, { timeout });
+    try {
+      await page.waitForFunction(() => window.__SLUGTERRA__.mode === 'playing' && window.__SLUGTERRA__.audio.getStatus().clips.includes('blaster'), undefined, { timeout });
+    } catch (error) {
+      console.error('Reload diagnostics:', await page.evaluate(() => ({ mode: window.__SLUGTERRA__.mode, audio: window.__SLUGTERRA__.audio.getStatus(), focus: document.hasFocus() })), errors);
+      throw error;
+    }
     assert.equal(await page.evaluate(() => window.__SLUGTERRA__.game.state.checkpoint.cavernId), 'dark-spores');
     assert.equal(await page.evaluate(() => window.__SLUGTERRA__.launcher.userData.loadedSlugId), 'glow');
     assert.equal(await page.evaluate(() => window.__SLUGTERRA__.game.state.ownedBlasters.includes('breaker')), true);
@@ -221,7 +226,7 @@ async function main() {
     await page.keyboard.press('m');
     await page.waitForFunction(() => document.querySelector('.cavern-atlas'), undefined, { timeout });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
-    assert.equal(await page.locator('.cavern-atlas-card').count(), 3);
+    assert.equal(await page.locator('.cavern-atlas-card').count(), 5);
     await page.screenshot({ path: path.join(root, 'test-results/campaign-mobile-atlas.png') });
     assert.deepEqual(errors, []);
     console.log('PASS: low quality and mobile-width collection/atlas dialogs fit without horizontal overflow; no browser application errors');

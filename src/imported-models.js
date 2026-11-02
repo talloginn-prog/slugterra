@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
+import { alignImportedBlaster } from './blaster-alignment.js';
 import burpyURL from './assets/models/runtime/burpy.glb?url&inline';
 import joulesURL from './assets/models/runtime/joules.glb?url&inline';
 import blasterURL from './assets/models/runtime/blaster.glb?url&inline';
@@ -90,28 +91,5 @@ export function createImportedShell(_THREE, { height = 0.22 } = {}) {
 export function createImportedBlaster(_THREE, spec = {}) {
   const id = typeof spec === 'string' ? spec : spec.id || 'standard';
   const scene = instance(id);
-  if (!scene || !['standard', 'breaker', 'rapid'].includes(id)) return null;
-  const group = new THREE.Group(), content = new THREE.Group();
-  content.add(scene); group.add(content);
-  let box = new THREE.Box3().setFromObject(content), size = box.getSize(new THREE.Vector3());
-  // Uploaded glTF scenes use Y-up, but their weapon length can be X or Z.
-  content.rotation.y = size.x > size.z ? Math.PI / 2 : Math.PI;
-  content.updateMatrixWorld(true);
-  box = new THREE.Box3().setFromObject(content); size = box.getSize(new THREE.Vector3());
-  const ratio = 0.72 / Math.max(size.z, 0.0001);
-  const tip = new THREE.Vector3(), point = new THREE.Vector3(); let count = 0;
-  content.traverse(object => {
-    if (!object.isMesh || !object.geometry.attributes.position) return;
-    const positions = object.geometry.attributes.position;
-    for (let i = 0; i < positions.count; i++) {
-      point.fromBufferAttribute(positions, i).applyMatrix4(object.matrixWorld);
-      if (point.z <= box.min.z + size.z * 0.025) { tip.add(point); count++; }
-    }
-  });
-  if (count) tip.divideScalar(count); else tip.set(0, box.getCenter(new THREE.Vector3()).y, box.min.z);
-  content.scale.setScalar(ratio);
-  content.position.set(-tip.x * ratio, 0.055 - tip.y * ratio, -0.553 - tip.z * ratio);
-  group.name = `Uploaded ${id} blaster`; group.userData.importedModelId = id;
-  group.userData.muzzle = { x: 0, y: 0.055, z: -0.553 };
-  return group;
+  return alignImportedBlaster(scene, id);
 }

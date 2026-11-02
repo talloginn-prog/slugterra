@@ -7,6 +7,10 @@ export const AUDIO_SLOTS = Object.freeze([
   'impact-fire', 'impact-electric', 'impact-water', 'reload',
 ]);
 
+// The supplied 1.824 s recording contains the launch and transformation as one
+// sequence. Skip its measured leading silence without modifying the asset.
+export const SHOT_AUDIO_OFFSET = 0.09;
+
 const MAX_CLIP_BYTES = 8 * 1024 * 1024;
 const MAX_CLIP_SECONDS = 15;
 
@@ -31,6 +35,8 @@ export function createAudio({ bundledClips = {} } = {}) {
   const voices = new Set();
   const clips = new Map();
   const bundled = new Map();
+  const shotVoices = new WeakMap();
+  let shotSerial = 0, lastShot = null;
   const bundledFailures = new Set();
   const bundledEntries = Object.entries(bundledClips).filter(([slot]) => AUDIO_SLOTS.includes(slot));
 
@@ -244,7 +250,7 @@ export function createAudio({ bundledClips = {} } = {}) {
           })());
         }
         const buffer = await decodedAssets.get(data);
-        if (!disposed) bundled.set(slot, { buffer, offset: clamp(descriptor.offset, 0, Math.max(0, buffer.duration - 0.01)) });
+        if (!disposed) bundled.set(slot, { buffer, offset: clamp(descriptor.offset, 0, Math.max(0, buffer.duration - 0.01)), sequence: descriptor.sequence === true });
       } catch {
         if (!disposed) bundledFailures.add(slot);
       }
@@ -270,7 +276,7 @@ export function createAudio({ bundledClips = {} } = {}) {
     source.connect(gain).connect(effects);
     track(source, [source, gain]);
     source.start(now, offset);
-    return true;
+    return source;
   }
 
   function initialize() {
@@ -397,19 +403,53 @@ export function createAudio({ bundledClips = {} } = {}) {
       else clearVoices();
     },
     shoot(element) {
-      if (playClip('blaster')) return;
+      const receipt = { id: ++shotSerial, shotTime: context?.currentTime ?? null, morphTime: null, sequenceStarted: false, cancelled: false };
+      lastShot = receipt;
+      const morphSlot = 'morph-' + kind(element);
+      // Personal launch and transformation slots replace the combined default
+      // for this shot, so its later recorded cue cannot play under an override.
+      if (clips.has('blaster') && playClip('blaster')) return receipt;
+      if (bundled.get(morphSlot)?.sequence && !clips.has(morphSlot)) {
+        const source = playClip(morphSlot);
+        if (source) {
+          receipt.sequenceStarted = true;
+          shotVoices.set(receipt, source);
+          return receipt;
+        }
+      }
+      if (playClip('blaster')) return receipt;
       mechanicalRelease();
       chirp(element, 0.025, 0.75);
       elementalBurst(element, 0.65, 0.025);
+      return receipt;
     },
-    morph(element) {
-      if (playClip('morph-' + kind(element))) return;
+    morph(element, receipt) {
+      if (receipt && typeof receipt === 'object') receipt.morphTime = context?.currentTime ?? null;
+      const slot = 'morph-' + kind(element);
+      if (clips.has(slot) && playClip(slot)) return;
+      // A combined recording already started at the muzzle. Replaying it here
+      // produces the delayed second launch that this per-shot receipt avoids.
+      if (receipt?.sequenceStarted) return;
+      if (!bundled.get(slot)?.sequence && playClip(slot)) return;
       noise(0.24, 0.16, 300, { type: 'bandpass', q: 1.2, to: 3800, attack: 0.03 });
       tone(180, 1170, 0.22, 0.095, 'triangle', 0, 0.035);
       tone(270, 1755, 0.21, 0.045, 'sine', 0.01, 0.03);
       chirp(element, 0.015, 0.55);
       elementalBurst(element, 0.8, 0.16);
       tone(185, 43, 0.22, 0.21, 'sine', 0.17);
+    },
+    cancelShot(receipt) {
+      // A companion stopped by nearby cover never transforms. Stop its pending
+      // recorded sequence; an already transformed shot keeps its effect tail.
+      if (!receipt || receipt.morphTime !== null || receipt.cancelled) return false;
+      const source = shotVoices.get(receipt);
+      if (!source) return false;
+      // Keep a short launch transient even if collision is detected in the same
+      // simulation batch as firing; nearby cover must not make the gun silent.
+      try { source.stop(Math.max(context?.currentTime ?? 0, receipt.shotTime + 0.08)); } catch { /* The short recording may have ended. */ }
+      shotVoices.delete(receipt);
+      receipt.cancelled = true;
+      return true;
     },
     reload(element) {
       if (playClip('reload')) return;
@@ -540,6 +580,7 @@ export function createAudio({ bundledClips = {} } = {}) {
         bundledClips: bundledEntries.map(([slot]) => slot).filter(slot => !bundledFailures.has(slot)),
         readyBundledClips: AUDIO_SLOTS.filter(slot => bundled.has(slot)),
         failedBundledClips: AUDIO_SLOTS.filter(slot => bundledFailures.has(slot)),
+        lastShot: lastShot ? { ...lastShot } : null,
       };
     },
     dispose() {

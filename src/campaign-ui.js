@@ -9,11 +9,17 @@ import frostProto from './assets/references/frost-protoform.png?inline';
 import frostMorph from './assets/references/frost-velocimorph.png?inline';
 import glowProto from './assets/references/glow-protoform.png?inline';
 import glowMorph from './assets/references/glow-velocimorph.png?inline';
+import rammstoneProto from './assets/references/rammstone-protoform.png?inline';
+import rammstoneMorph from './assets/references/rammstone-velocimorph.png?inline';
+import arachnetProto from './assets/references/arachnet-protoform.png?inline';
+import arachnetMorph from './assets/references/arachnet-velocimorph.png?inline';
+import fandangoProto from './assets/references/fandango-protoform.png?inline';
+import fandangoMorph from './assets/references/fandango-velocimorph.png?inline';
 import forestStill from './assets/references/dark-spores-cavern.webp?inline';
 import pyriteStill from './assets/references/pyrite-cavern.webp?inline';
 
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
-const refs = { ember: [burpyProto, burpyMorph], volt: [joulesProto, joulesMorph], doc: [docProto, docMorph], frost: [frostProto, frostMorph], glow: [glowProto, glowMorph] };
+const refs = { ember: [burpyProto, burpyMorph], volt: [joulesProto, joulesMorph], doc: [docProto, docMorph], frost: [frostProto, frostMorph], glow: [glowProto, glowMorph], rammstone: [rammstoneProto, rammstoneMorph], arachnet: [arachnetProto, arachnetMorph], fandango: [fandangoProto, fandangoMorph] };
 const descriptions = {
   ember: 'Your fiery Infurnus companion. Heavy fire attacks reward a clear line of sight and a well-timed launch.',
   volt: 'A fast Tazerling with lightning-shaped horns. Electrical hits interrupt a hostile’s attack.',
@@ -28,6 +34,12 @@ const caveCopy = {
   'dark-spores': 'Descend beneath red-rimmed lantern mushrooms and twisting black roots. Find the forest survey beacon and seek a rare healer.',
   pyrite: 'Cross luminous blue terraces beneath vast waterfall curtains. Explore the broken monuments and search for a new companion.',
 };
+const regionPreview = cave => {
+  if (!['quiet-lawn', 'snowdance'].includes(cave.id)) return '<div class="haven-symbol">◈</div>';
+  const snow = cave.id === 'snowdance', ink = snow ? '#18354d' : '#142e2b';
+  const shelves = snow ? '<path d="m0 106 58-18 49 10 65-31 48 20 43-31 57 11v113H0Z" fill="#456f83"/><path d="m0 119 62-18 52 13 61-31 48 21 44-32 53 13v16l-54-9-43 31-48-19-61 28-53-11-61 17Z" fill="#b7e4e8"/><path d="m0 155 80-23 62 14 79-26 99 34v66H0Z" fill="#31546d"/><path d="m0 155 80-23 62 14 79-26 99 34-1 10-95-26-83 24-63-13-78 24Z" fill="#93c9d5"/><path d="m42 0 10 48 12-48m70 0 16 67 14-67m84 0 12 43 11-43" fill="#8cb7cb" opacity=".5"/>' : '<path d="m0 121 52-20 61 11 72-24 53 29 82-16v119H0Z" fill="#335b46"/><path d="m0 127 56-20 57 11 75-23 47 28 85-15v15l-86 12-49-25-69 21-58-10-58 23Z" fill="#7ba678"/><path d="m0 170 79-28 65 14 80-17 96 24v57H0Z" fill="#214a40"/><path d="m0 177 82-26 61 17 83-20 94 27v10l-94-25-84 21-62-17-80 26Z" fill="#6d9864"/><path d="m239 112 15-72 14 72m-13-68 36 23-43 20m-210 47 8-59 11 59" fill="none" stroke="#182d2a" stroke-width="9"/><path d="m253 45 36 22-41 17 5-39m17 13-3 17m-12-12 26 5" fill="none" stroke="#a7c2bb" stroke-width="1" opacity=".5"/>';
+  return `<svg class="region-concept" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Original ${esc(cave.shortName)} expedition illustration"><defs><linearGradient id="region-${cave.id}" x2="0" y2="1"><stop stop-color="${ink}"/><stop offset="1" stop-color="${snow ? '#5e9cb0' : '#668265'}"/></linearGradient></defs><rect width="320" height="220" fill="url(#region-${cave.id})"/><path d="m0 0 40 44 32-24 31 51 43-50 36 11 42-17 46 23 50-23V0Z" fill="${ink}"/>${shelves}<path d="m130 220 12-34 23-20 15-18" fill="none" stroke="${snow ? '#b6c7ac' : '#c6b88a'}" stroke-width="7" opacity=".5"/><g fill="#edbb7c"><circle cx="75" cy="131" r="3"/><circle cx="190" cy="111" r="3"/><circle cx="269" cy="148" r="3"/></g></svg><small class="atlas-art-credit">ORIGINAL EXPEDITION ART</small>`;
+};
 const skillCopy = {
   'slug-fu': 'Guide the selected companion in outward flight toward your aim. Keep moving while your slug follows your focus.',
   mastery: 'Draw on your training to strengthen your companions’ next shots for a short time.',
@@ -38,7 +50,7 @@ const ownedIds = state => Array.isArray(state.ownedSlugs) ? state.ownedSlugs : (
 const equippedIds = state => Array.isArray(state.equippedSlugs) ? state.equippedSlugs : (state.slugs || []).map(slug => slug.id);
 
 export function campaignSlugArt(slug, morphed = false, useReference = false) {
-  if (refs[slug.id] && (useReference || ['doc', 'frost', 'glow'].includes(slug.id))) {
+  if (refs[slug.id] && (useReference || !['ember', 'volt', 'tide'].includes(slug.id))) {
     return `<img class="slug-art reference-slug-art ${morphed ? 'velocimorph-art' : 'protoform-art'}" data-form="${morphed ? 'velocimorph' : 'protoform'}" src="${refs[slug.id][morphed ? 1 : 0]}" alt="${esc(slug.name)} ${morphed ? 'transformed' : 'protoform'}" draggable="false"/>`;
   }
   if (!['ice', 'light', 'healing'].includes(slug.element)) return '';
@@ -82,7 +94,7 @@ export function renderCampaignPanel({ kind, state, context = {}, container, acti
   if (kind === 'atlas' || (kind === 'map' && state.currentCavern && state.currentCavern !== 'luminous')) {
     const current = state.currentCavern || 'luminous', visited = state.visitedCaverns || ['luminous'];
     const cave = CAVERNS[current] || CAVERNS.luminous;
-    container.innerHTML = `${title('CAVERN ATLAS / CONNECTED EXPEDITIONS', 'Follow the <em>light.</em>')}<p class="dialog-intro">Three connected caverns. Take the marked passage gates to travel, and activate beacons to set a safe return point. Your progress stays with you.</p><div class="atlas-current"><span>CURRENT CAVERN</span><strong>${esc(cave.name)}</strong>${coins(state)}</div><div class="cavern-atlas">${Object.values(CAVERNS).map((c, index) => `<article class="cavern-atlas-card ${c.id === current ? 'current' : ''}"><div class="atlas-image ${c.id === 'luminous' ? 'original-region-art' : ''}">${caveImages[c.id] ? `<img src="${caveImages[c.id]}" alt="Animated-series reference for ${esc(c.name)}"/>` : '<div class="haven-symbol">◈</div>'}<span>0${index + 1} / ${c.id === current ? 'YOU ARE HERE' : state.cavernProgress?.[c.id]?.completed ? 'SURVEY RECORDED' : visited.includes(c.id) ? 'VISITED' : 'UNEXPLORED'}</span></div><div class="atlas-card-copy"><span class="atlas-canon">${c.canonical ? 'SLUGTERRA CAVERN' : 'YOUR ORIGINAL EXPEDITION'}</span><h3>${esc(c.name)}</h3><p>${esc(caveCopy[c.id] || c.description)}</p><div class="atlas-route">${c.id === current ? '◈ Current expedition' : `↗ Find the ${esc(c.shortName || c.name)} passage gate`}</div>${c.reference ? `<a class="atlas-source" href="${esc(c.reference)}" target="_blank" rel="noopener noreferrer">Cavern reference ↗</a>` : ''}</div></article>`).join('')}</div><div class="atlas-connections"><span>HAVEN OUTPOST</span><i>↔</i><span>DARK SPORES</span><i>↔</i><span>PYRITE</span><i>↔</i><span>HAVEN</span></div><div class="guide-note"><p><strong>Explore at your own pace.</strong> Gate markers guide you between caverns. Amber lights mark contacts and supplies; cyan beacons mark discoveries and checkpoints. The heartshard expedition remains in the Luminous Deep.</p></div><p class="panel-footnote">Cavern and creature designs follow Slugterra references. Routes, surveys and encounters are this expedition’s own adventure.</p>`;
+    container.innerHTML = `${title('CAVERN ATLAS / CONNECTED EXPEDITIONS', 'Follow the <em>light.</em>')}<p class="dialog-intro">${Object.keys(CAVERNS).length} connected caverns. Follow the marked passage gates, discover their companions, and activate beacons to choose your return point.</p><div class="atlas-current"><span>CURRENT CAVERN</span><strong>${esc(cave.name)}</strong>${coins(state)}</div><div class="cavern-atlas">${Object.values(CAVERNS).map((c, index) => `<article class="cavern-atlas-card ${c.id === current ? 'current' : ''}"><div class="atlas-image ${c.id === 'luminous' ? 'original-region-art' : ''}">${caveImages[c.id] ? `<img src="${caveImages[c.id]}" alt="Animated-series reference for ${esc(c.name)}"/>` : regionPreview(c)}<span>0${index + 1} / ${c.id === current ? 'YOU ARE HERE' : state.cavernProgress?.[c.id]?.completed ? 'SURVEY RECORDED' : visited.includes(c.id) ? 'VISITED' : 'UNEXPLORED'}</span></div><div class="atlas-card-copy"><span class="atlas-canon">${c.canonical ? 'SLUGTERRA CAVERN' : 'YOUR ORIGINAL EXPEDITION'}</span><h3>${esc(c.name)}</h3><p>${esc(caveCopy[c.id] || c.description)}</p><div class="atlas-route">${c.id === current ? '◈ Current expedition' : `↗ Find the ${esc(c.shortName || c.name)} passage gate`}</div>${c.reference ? `<a class="atlas-source" href="${esc(c.reference)}" target="_blank" rel="noopener noreferrer">Cavern reference ↗</a>` : ''}</div></article>`).join('')}</div><div class="atlas-connections">${Object.values(CAVERNS).map(c => `<span>${esc(c.shortName || c.name)}</span>`).join('<i>◇</i>')}</div><div class="guide-note"><p><strong>Explore at your own pace.</strong> Gate markers guide you between caverns. Amber lights mark contacts and supplies; cyan beacons mark discoveries and checkpoints. The heartshard expedition remains in the Luminous Deep.</p></div><p class="panel-footnote">Series sources identify the cavern names and reference stills. New environments, concept illustrations, routes and encounters belong to this expedition.</p>`;
     return true;
   }
   if (kind === 'merchant') {

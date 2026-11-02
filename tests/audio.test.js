@@ -255,3 +255,134 @@ test('the supplied MP3 is the automatic morph sound, survives clearing imports a
     await new Promise(resolve => server.close(resolve));
   }
 });
+
+test('combined shot recording starts at launch, is not replayed at 100 mph, and respects per-phase overrides', { timeout: 30000 }, async () => {
+  const source = await readFile(new URL('../src/audio.js', import.meta.url), 'utf8');
+  const mp3 = await readFile(new URL('../src/assets/audio/slugterra-metamorphosis-shot.mp3', import.meta.url));
+  const server = createServer((request, response) => {
+    response.setHeader('Content-Type', request.url === '/audio.js' ? 'text/javascript' : 'text/html');
+    response.end(request.url === '/audio.js' ? source : '<!doctype html><title>Shot timing test</title>');
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  let browser;
+  try {
+    browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium', headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage', '--autoplay-policy=no-user-gesture-required'] });
+    const page = await browser.newPage();
+    const errors = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await page.goto('http://127.0.0.1:' + server.address().port);
+    const result = await page.evaluate(async dataURL => {
+      const { createAudio, SHOT_AUDIO_OFFSET } = await import('/audio.js');
+      const NativeAudioContext = window.AudioContext;
+      const contexts = [];
+      window.AudioContext = class extends NativeAudioContext {
+        constructor(options) { super(options); this.starts = []; contexts.push(this); }
+        createBufferSource() {
+          const source = super.createBufferSource(), start = source.start.bind(source), stop = source.stop.bind(source);
+          source.start = (when, offset, ...rest) => {
+            const entry = { when, offset: offset || 0, duration: source.buffer.duration, stopped: false };
+            this.starts.push(entry);
+            source.stop = (...args) => { entry.stopped = true; entry.stopTime = args[0]; return stop(...args); };
+            return start(when, offset, ...rest);
+          };
+          return source;
+        }
+      };
+      const audio = createAudio({ bundledClips: Object.fromEntries(['fire', 'electric', 'water'].map(element => [
+        'morph-' + element, { data: dataURL, offset: SHOT_AUDIO_OFFSET, sequence: true },
+      ])) });
+      await audio.unlock();
+      const context = contexts.at(-1);
+      const reset = () => { audio.setEnabled(false); audio.setEnabled(true); };
+      const recorded = entries => entries.filter(entry => entry.duration > 1.75 && entry.duration < 1.85);
+      const instantShots = [];
+      for (const element of ['fire', 'electric', 'water']) {
+        reset();
+        const before = context.starts.length;
+        const receipt = audio.shoot(element);
+        const launches = context.starts.slice(before);
+        const afterLaunch = context.starts.length;
+        audio.morph(element, receipt);
+        instantShots.push({ receipt: { ...receipt }, launches, addedAtMorph: context.starts.length - afterLaunch });
+      }
+
+      // Two companions can be out simultaneously; suppression belongs to each
+      // flight rather than a single global flag that the next shot can replace.
+      reset();
+      const simultaneousBefore = context.starts.length;
+      const first = audio.shoot('fire'), second = audio.shoot('water');
+      audio.morph('fire', first); audio.morph('water', second);
+      const simultaneous = { recordings: recorded(context.starts.slice(simultaneousBefore)).length, first: { ...first }, second: { ...second } };
+
+      reset();
+      const cancelBefore = context.starts.length;
+      const blocked = audio.shoot('fire');
+      const cancelled = audio.cancelShot(blocked), cancelledAgain = audio.cancelShot(blocked);
+      const blockedSourceStopped = context.starts[cancelBefore].stopped;
+      const blockedStopTime = context.starts[cancelBefore].stopTime, blockedShotTime = blocked.shotTime;
+      const matured = audio.shoot('water'); audio.morph('water', matured);
+      const matureCancellation = audio.cancelShot(matured);
+
+      function wav(seconds) {
+        const rate = 8000, count = Math.floor(rate * seconds), bytes = new ArrayBuffer(44 + count * 2), view = new DataView(bytes);
+        const word = (offset, value) => [...value].forEach((char, i) => view.setUint8(offset + i, char.charCodeAt(0)));
+        word(0, 'RIFF'); view.setUint32(4, 36 + count * 2, true); word(8, 'WAVE'); word(12, 'fmt ');
+        view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true); view.setUint32(24, rate, true);
+        view.setUint32(28, rate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true); word(36, 'data'); view.setUint32(40, count * 2, true);
+        for (let i = 0; i < count; i++) view.setInt16(44 + i * 2, Math.sin(i / rate * Math.PI * 880) * 10000, true);
+        return bytes;
+      }
+
+      await audio.loadClip('blaster', wav(0.18)); reset();
+      let before = context.starts.length;
+      const customLaunch = audio.shoot('fire');
+      const launchOverride = { receipt: { ...customLaunch }, starts: context.starts.slice(before) };
+      before = context.starts.length; audio.morph('fire', customLaunch);
+      const defaultAtCustomMorph = recorded(context.starts.slice(before)).length;
+
+      await audio.clearClips(); await audio.loadClip('morph-fire', wav(0.22)); reset();
+      before = context.starts.length;
+      const customMorph = audio.shoot('fire');
+      const defaultUnderCustomMorph = recorded(context.starts.slice(before)).length;
+      before = context.starts.length; audio.morph('fire', customMorph);
+      const morphOverride = { receipt: { ...customMorph }, starts: context.starts.slice(before) };
+
+      await audio.clearClips(); reset();
+      before = context.starts.length;
+      const restored = audio.shoot('fire'); audio.morph('fire', restored);
+      const restoredStarts = context.starts.slice(before);
+      audio.dispose();
+      return { offset: SHOT_AUDIO_OFFSET, instantShots, simultaneous, cancelled, cancelledAgain, blockedSourceStopped, blockedStopTime, blockedShotTime, matureCancellation,
+        launchOverride, defaultAtCustomMorph, defaultUnderCustomMorph, morphOverride, restoredStarts };
+    }, 'data:audio/mpeg;base64,' + mp3.toString('base64'));
+    assert.equal(result.offset, 0.09);
+    for (const shot of result.instantShots) {
+      assert.equal(shot.receipt.sequenceStarted, true);
+      assert.equal(shot.launches.length, 1, 'the supplied recording replaces synthesized launch');
+      assert.equal(shot.launches[0].offset, 0.09, 'trim the measured leading silence at the source');
+      assert.ok(Math.abs(shot.launches[0].when - shot.receipt.shotTime) <= 0.02, 'schedule immediately in the shot call, not after a timer or the morph event');
+      assert.equal(shot.addedAtMorph, 0, 'reaching 100 mph must not replay the launch recording');
+      assert.ok(shot.receipt.morphTime >= shot.receipt.shotTime);
+    }
+    assert.equal(result.simultaneous.recordings, 2, 'overlapping companions each start exactly one sequence');
+    assert.notEqual(result.simultaneous.first.id, result.simultaneous.second.id);
+    assert.equal(result.cancelled, true);
+    assert.equal(result.cancelledAgain, false);
+    assert.equal(result.blockedSourceStopped, true, 'a shot stopped before transforming cancels its pending recorded cue');
+    assert.ok(result.blockedStopTime >= result.blockedShotTime + 0.08, 'an immediate collision retains the launch transient');
+    assert.equal(result.matureCancellation, false, 'transformed shots retain their sound tail');
+    assert.equal(result.launchOverride.receipt.sequenceStarted, false);
+    assert.equal(result.launchOverride.starts.length, 1);
+    assert.ok(Math.abs(result.launchOverride.starts[0].duration - 0.18) < 0.01);
+    assert.equal(result.defaultAtCustomMorph, 0, 'custom launch must not be followed by the complete default launch at morph');
+    assert.equal(result.defaultUnderCustomMorph, 0, 'custom morph must not overlap a default recorded morph tail');
+    assert.equal(result.morphOverride.starts.length, 1);
+    assert.ok(Math.abs(result.morphOverride.starts[0].duration - 0.22) < 0.01);
+    assert.ok(Math.abs(result.morphOverride.starts[0].when - result.morphOverride.receipt.morphTime) <= 0.02);
+    assert.equal(result.restoredStarts.length, 1, 'clearing overrides restores one immediate combined sequence');
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser?.close();
+    await new Promise(resolve => server.close(resolve));
+  }
+});

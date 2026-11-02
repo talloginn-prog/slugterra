@@ -1,4 +1,5 @@
 import { CAVERNS, SLUG_CATALOG, BLASTERS, SKILLS } from './content.js';
+import { ASPECT_RATIOS, RESOLUTIONS } from './display.js';
 
 export const SAVE_KEY = 'slugterra.luminous-deep.v1';
 
@@ -26,10 +27,10 @@ function initialState(settings) {
     checkpoint: { cavernId: 'luminous', position: { x: 0, y: 3, z: 35 } },
     ownedSlugs: [...STARTERS], equippedSlugs: [...STARTERS],
     coins: 100, ownedBlasters: ['standard'], equippedBlaster: 'standard',
-    skills: [], skillCooldowns: {}, activeSkills: {}, completedEncounters: [],
+    skills: [], skillCooldowns: {}, activeSkills: {}, completedEncounters: [], energyBoost: 0,
     quest: {}, shards: 0, collected: [], kills: 0, deaths: 0,
     bossDefeated: false, questStarted: false, won: false,
-    settings: { sound: true, sensitivity: 1, quality: 'high', difficulty: 'normal', ...settings },
+    settings: { sound: true, sensitivity: 1, quality: 'high', difficulty: 'normal', aspectRatio: 'auto', resolution: 'auto', ...settings },
     hasSave: false, position: { x: 0, y: 3, z: 35 },
   };
 }
@@ -76,6 +77,7 @@ export function createGameState(providedStorage) {
   function hasSave() { return Boolean(readSave()); }
 
   function applySave(saved) {
+    state.energyBoost = 0;
     const level = Math.floor(finite(saved.level, 1, 1, 20));
     state.level = level;
     state.maxHealth = 100 + (level - 1) * 12;
@@ -96,6 +98,8 @@ export function createGameState(providedStorage) {
     state.settings.sensitivity = finite(saved.settings?.sensitivity, 1, 0.25, 2.5);
     if (['high', 'ultra', 'medium', 'low'].includes(saved.settings?.quality)) state.settings.quality = saved.settings.quality;
     if (['easy', 'normal', 'hard'].includes(saved.settings?.difficulty)) state.settings.difficulty = saved.settings.difficulty;
+    if (ASPECT_RATIOS.includes(saved.settings?.aspectRatio)) state.settings.aspectRatio = saved.settings.aspectRatio;
+    if (RESOLUTIONS.includes(saved.settings?.resolution)) state.settings.resolution = saved.settings.resolution;
     if (saved.version === 2) {
       state.currentCavern = saved.currentCavern;
       state.visitedCaverns = [...new Set(['luminous', state.currentCavern, ...identifiers(saved.visitedCaverns).filter(caveExists)])];
@@ -198,6 +202,7 @@ export function createGameState(providedStorage) {
 
   function tick(dt) {
     dt = finite(dt, 0, 0, 1);
+    state.energyBoost = Math.max(0, state.energyBoost - dt);
     for (const slug of runtimeSlugs.values()) slug.cooldown = Math.max(0, slug.cooldown - dt);
     for (const id of Object.keys(state.skillCooldowns)) state.skillCooldowns[id] = Math.max(0, state.skillCooldowns[id] - dt);
     for (const id of Object.keys(state.activeSkills)) state.activeSkills[id] = Math.max(0, state.activeSkills[id] - dt);
@@ -228,8 +233,13 @@ export function createGameState(providedStorage) {
       state.shield = Math.min(state.maxShield, state.shield + 8);
     }
     if (slug.element === 'healing') heal(slug.healAmount || 12);
+    const energyMultiplier = slug.element !== 'energy' && state.energyBoost > 0 ? 1.25 : 1;
+    if (slug.element === 'energy') {
+      state.energyBoost = slug.supportDuration || 6;
+      state.shield = Math.min(state.maxShield, state.shield + (slug.shieldAmount || 14));
+    } else if (energyMultiplier > 1) state.energyBoost = 0;
     emit({ event: 'fired', slug });
-    return { ...slug, damage: slug.damage * blaster.damageMultiplier * (state.activeSkills.mastery > 0 ? 1.2 : 1) };
+    return { ...slug, damage: slug.damage * blaster.damageMultiplier * (state.activeSkills.mastery > 0 ? 1.2 : 1) * energyMultiplier, energyBoosted: energyMultiplier > 1 };
   }
 
   function damage(amount) {
@@ -308,6 +318,8 @@ export function createGameState(providedStorage) {
     else if (key === 'sensitivity' && Number.isFinite(Number(value))) state.settings.sensitivity = finite(Number(value), 1, 0.25, 2.5);
     else if (key === 'difficulty' && ['easy', 'normal', 'hard'].includes(value)) state.settings.difficulty = value;
     else if (key === 'quality' && ['high', 'ultra', 'medium', 'low'].includes(value)) state.settings.quality = value;
+    else if (key === 'aspectRatio' && ASPECT_RATIOS.includes(value)) state.settings.aspectRatio = value;
+    else if (key === 'resolution' && RESOLUTIONS.includes(value)) state.settings.resolution = value;
     else return false;
     save();
     emit({ event: 'setting-changed', key, value: state.settings[key] });
