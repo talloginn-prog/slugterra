@@ -16,7 +16,9 @@
     "test:lifecycle": "node tests/lifecycle-browser.cjs",
     "test:collision": "node tests/collision-browser.cjs",
     "test:camera": "node tests/camera-browser.cjs",
-    "verify:models": "node scripts/model-assets.mjs"
+    "verify:models": "node scripts/model-assets.mjs",
+    "test:expansion": "node tests/expansion-browser.cjs",
+    "test:abilities": "node tests/abilities-browser.cjs"
   },
   "dependencies": {
     "three": "0.180.0"

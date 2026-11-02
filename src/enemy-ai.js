@@ -1,135 +1,129 @@
-/** Deterministic ranged-enemy intent. Rendering, movement and collision stay in main. */
+/** Deterministic ranged-enemy intent. Scene movement and collision stay in main. */
 const DIFFICULTY = Object.freeze({
   easy: Object.freeze({ damage: 0.7, speed: 0.82, windup: 1.4, recovery: 1.25 }),
   normal: Object.freeze({ damage: 1, speed: 1, windup: 1, recovery: 1 }),
   hard: Object.freeze({ damage: 1.25, speed: 1.1, windup: 0.76, recovery: 0.78 }),
 });
-
 const finite = (value, fallback = 0) => Number.isFinite(value) ? value : fallback;
 const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 const direction = (from, to) => {
   const x = to.x - from.x, z = to.z - from.z, length = Math.hypot(x, z);
   return length > 1e-6 ? { x: x / length, z: z / length } : { x: 0, z: 0 };
 };
+const scaled = (move, amount) => ({ x: move.x * amount, z: move.z * amount });
 
 /**
- * A windup locks its aim, giving the player time to strafe or seek cover.
- * The caller supplies fresh line of sight and applies the returned movement
- * through its own collision checks. `fire` is a one-update event, never a latch.
+ * Guards walk a circuit, investigate their last sighting and reposition between
+ * shots. A stationary windup locks aim so the player can dodge or reach cover.
+ * `blocked` is optional feedback from the scene controller, never a collision
+ * bypass; it changes the next patrol destination and preferred sidestep.
  */
 export function createEnemyBrain({ home = { x: 0, z: 0 }, boss = false, difficulty = 'normal' } = {}) {
   const origin = Object.freeze({ x: finite(home?.x), z: finite(home?.z) });
   const scale = DIFFICULTY[difficulty] || DIFFICULTY.normal;
   const tuning = Object.freeze({
-    aggro: boss ? 35 : 21,
-    preferredRange: boss ? 11 : 8,
-    leashRadius: boss ? 40 : 22,
+    aggro: boss ? 35 : 21, preferredRange: boss ? 11 : 8,
+    leashRadius: boss ? 40 : 22, patrolRadius: boss ? 6 : 4.2,
     windup: (boss ? 0.95 : 0.75) * scale.windup,
     recovery: (boss ? 1.5 : 1.8) * scale.recovery,
-    alert: 0.2,
-    damageMultiplier: scale.damage,
-    speedMultiplier: scale.speed,
+    alert: 0.2, searchDuration: 5,
+    damageMultiplier: scale.damage, speedMultiplier: scale.speed,
   });
-  let phase = 'patrol', windupRemaining = 0, recoveryRemaining = 0;
-  let alertRemaining = 0, staggerRemaining = 0, lockedAim = null;
-
+  const seed = Math.abs(Math.sin(origin.x * 12.9898 + origin.z * 78.233));
+  const patrolOffset = seed * Math.PI * 2;
+  let phase, windupRemaining, recoveryRemaining, alertRemaining, staggerRemaining;
+  let lockedAim, lastSeen, searchRemaining, patrolIndex, blockedTime, sidestep;
   function reset() {
-    phase = 'patrol';
-    windupRemaining = recoveryRemaining = alertRemaining = staggerRemaining = 0;
-    lockedAim = null;
+    phase = 'patrol'; windupRemaining = recoveryRemaining = alertRemaining = staggerRemaining = 0;
+    lockedAim = lastSeen = null; searchRemaining = blockedTime = 0; patrolIndex = 0; sidestep = seed > .5 ? 1 : -1;
   }
-
-  function result({ move = { x: 0, z: 0 }, fire = false, aimPoint = null } = {}) {
+  reset();
+  function result({ move = { x: 0, z: 0 }, fire = false, aimPoint = null, lookAt = null } = {}) {
     return {
-      phase, move, fire,
+      phase, move, fire, lookAt: lookAt ? { ...lookAt } : null,
       aimPoint: aimPoint ? { ...aimPoint } : null,
       telegraph: phase === 'windup' ? Math.max(0, Math.min(1, 1 - windupRemaining / tuning.windup)) : 0,
-      damageMultiplier: tuning.damageMultiplier,
-      speedMultiplier: tuning.speedMultiplier,
+      damageMultiplier: tuning.damageMultiplier, speedMultiplier: tuning.speedMultiplier,
     };
   }
-
   function cancelWindup() {
-    lockedAim = null;
-    windupRemaining = 0;
+    lockedAim = null; windupRemaining = 0;
     recoveryRemaining = Math.max(recoveryRemaining, tuning.recovery);
   }
-
-  function update(dt, { position = origin, target, lineOfSight = true, stagger = 0 } = {}) {
-    // A long suspended tab must not consume a complete tell or fire a burst.
-    dt = Math.max(0, Math.min(0.25, finite(dt)));
+  function patrol(current) {
+    const waypoint = () => {
+      const angle = patrolOffset + patrolIndex * Math.PI / 2;
+      return { x: origin.x + Math.cos(angle) * tuning.patrolRadius, z: origin.z + Math.sin(angle) * tuning.patrolRadius };
+    };
+    let goal = waypoint();
+    if (distance(current, goal) < .65 || blockedTime > .65) { patrolIndex = (patrolIndex + 1) % 4; blockedTime = 0; goal = waypoint(); }
+    phase = 'patrol';
+    return result({ move: scaled(direction(current, goal), .46), lookAt: goal });
+  }
+  function combatMove(current, target, amount = 1) {
+    if (!target) return { x: 0, z: 0 };
+    const toward = direction(current, target), gap = distance(current, target);
+    if (gap > tuning.preferredRange + 1.5) return scaled(toward, amount);
+    if (gap < tuning.preferredRange * .6) return scaled(toward, -.72 * amount);
+    return { x: -toward.z * sidestep * .65 * amount, z: toward.x * sidestep * .65 * amount };
+  }
+  function update(dt, { position = origin, target, lineOfSight = true, stagger = 0, blocked = false } = {}) {
+    dt = Math.max(0, Math.min(.25, finite(dt)));
     const current = { x: finite(position?.x, origin.x), z: finite(position?.z, origin.z) };
     const validTarget = target && Number.isFinite(target.x) && Number.isFinite(target.z);
     const destination = validTarget ? { x: target.x, y: finite(target.y), z: target.z } : null;
     const homeDistance = distance(current, origin);
-    const targetDistance = destination ? distance(current, destination) : Infinity;
-    const targetHomeDistance = destination ? distance(origin, destination) : Infinity;
-    const seesTarget = lineOfSight === true && validTarget;
-
+    const inTerritory = destination && distance(origin, destination) <= tuning.leashRadius + tuning.preferredRange;
+    const inAggro = inTerritory && distance(current, destination) <= tuning.aggro;
+    const seesTarget = lineOfSight === true && inAggro;
+    if (blocked) blockedTime += dt; else blockedTime = Math.max(0, blockedTime - dt * .5);
+    if (blockedTime > .45 && phase !== 'patrol') { sidestep *= -1; blockedTime = 0; }
+    if (seesTarget) { lastSeen = { ...destination }; searchRemaining = tuning.searchDuration; }
+    else searchRemaining = Math.max(0, searchRemaining - dt);
     staggerRemaining = Math.max(0, staggerRemaining - dt, finite(stagger));
     if (staggerRemaining > 0) {
       if (phase !== 'stagger') cancelWindup();
-      phase = 'stagger';
-      return result();
+      phase = 'stagger'; return result({ lookAt: lastSeen });
     }
     if (phase === 'stagger') phase = 'recovery';
     recoveryRemaining = Math.max(0, recoveryRemaining - dt);
-
-    // Once leashed, finish returning before responding to a nearby player.
-    if (homeDistance > tuning.leashRadius || (phase === 'return' && homeDistance > 0.8)) {
+    if (homeDistance > tuning.leashRadius || (phase === 'return' && homeDistance > .8)) {
       if (phase !== 'return') cancelWindup();
-      phase = 'return';
-      return result({ move: direction(current, origin) });
+      phase = 'return'; return result({ move: direction(current, origin), lookAt: origin });
     }
     if (phase === 'return') phase = 'patrol';
-
-    const engaged = destination && targetDistance <= tuning.aggro && targetHomeDistance <= tuning.leashRadius + tuning.preferredRange;
-    if (!engaged) {
-      if (phase === 'windup') cancelWindup();
-      if (homeDistance > 0.8) {
-        phase = 'return';
-        return result({ move: direction(current, origin) });
-      }
-      phase = 'patrol';
-      return result();
-    }
-
     if (phase === 'windup') {
-      if (!seesTarget) {
-        cancelWindup();
-        phase = 'recovery';
-        return result();
-      }
+      if (!seesTarget) { cancelWindup(); phase = 'recovery'; return result({ lookAt: lastSeen }); }
       windupRemaining = Math.max(0, windupRemaining - dt);
       if (windupRemaining <= 1e-9) {
-        const aimPoint = lockedAim;
-        lockedAim = null;
-        recoveryRemaining = tuning.recovery;
-        phase = 'recovery';
-        return result({ fire: true, aimPoint });
+        const aimPoint = lockedAim; lockedAim = null;
+        recoveryRemaining = tuning.recovery; phase = 'recovery'; sidestep *= -1;
+        return result({ fire: true, aimPoint, lookAt: aimPoint });
       }
-      return result();
+      return result({ lookAt: lockedAim });
     }
-
     if (recoveryRemaining > 1e-9) {
       phase = 'recovery';
-      return result();
+      return result({ move: combatMove(current, seesTarget ? destination : lastSeen, .48), lookAt: lastSeen });
     }
-
-    if (phase !== 'alert') {
-      phase = 'alert';
-      alertRemaining = tuning.alert;
-    } else alertRemaining = Math.max(0, alertRemaining - dt);
-
-    if (alertRemaining <= 1e-9 && seesTarget) {
-      phase = 'windup';
-      windupRemaining = tuning.windup;
-      lockedAim = { ...destination };
-      return result();
+    if (!seesTarget) {
+      if (lastSeen && searchRemaining > 0 && inTerritory) {
+        phase = 'search';
+        const gap = distance(current, lastSeen);
+        const move = gap > 1.2 ? scaled(direction(current, lastSeen), .8) : combatMove(current, lastSeen, .4);
+        return result({ move, lookAt: lastSeen });
+      }
+      lastSeen = null;
+      if (homeDistance > tuning.patrolRadius + 2) { phase = 'return'; return result({ move: direction(current, origin), lookAt: origin }); }
+      return patrol(current);
     }
-    const move = targetDistance > tuning.preferredRange ? direction(current, destination) : { x: 0, z: 0 };
-    return result({ move });
+    if (phase !== 'alert') { phase = 'alert'; alertRemaining = tuning.alert; }
+    else alertRemaining = Math.max(0, alertRemaining - dt);
+    if (alertRemaining <= 1e-9) {
+      phase = 'windup'; windupRemaining = tuning.windup; lockedAim = { ...destination };
+      return result({ lookAt: lockedAim });
+    }
+    return result({ move: combatMove(current, destination), lookAt: destination });
   }
-
   return { get phase() { return phase; }, tuning, update, reset };
 }

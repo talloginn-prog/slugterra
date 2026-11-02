@@ -12,3 +12,5 @@ Seven self-contained runtime GLBs are in `src/assets/models/runtime/`: Burpy, Jo
 The loader prepares models in the background and retains procedural fallbacks. Shared imported geometry/materials/textures belong to a page-lifetime cache, preventing disposal of a projectile or travel scene from breaking other instances. Model credits are accessible through **How to play → Model credits**; supplied attribution text is retained in `src/assets/models/attribution/`.
 
 Six packs include CC-BY-4.0 metadata. Four omit license metadata; their original contents are retained without inventing attribution or licensing terms. Runtime adaptation is recorded in the credits.
+
+Special thanks to [Starkster on Sketchfab](https://sketchfab.com/parmaryash2599) for the Slugterra blaster and slug-shell 3D designs. Individual model authors and licenses remain listed in the in-game model credits.

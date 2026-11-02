@@ -6,9 +6,10 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { createCavern } from './caverns.js';
 import { CAVERNS, BLASTERS } from './content.js';
 import { createEnemyBrain } from './enemy-ai.js';
+import { createEnemyVisual } from './enemy-models.js';
 import { createGameState } from './game-state.js';
 import { createUI } from './ui.js';
-import { createAudio } from './audio.js';
+import { createAudio, SHOT_AUDIO_OFFSET } from './audio.js';
 import metamorphosisClip from './assets/audio/slugterra-metamorphosis-shot.mp3?inline';
 import { createSlugModel, createBlasterModel } from './models.js';
 import { createCharacterPhysics, segmentSphereHit, segmentCapsuleHit, firstTerrainHit } from './physics.js';
@@ -17,14 +18,16 @@ import { createSceneCollision } from './collision.js';
 import { prepareImportedModels, getImportedModelStatus, createImportedCharacter, applyImportedSlug, createImportedBlaster } from './imported-models.js';
 import { registerImportedModels } from './model-registry.js';
 import { createViewController } from './camera-view.js';
+import { calculateDisplay } from './display.js';
 import './style.css';
 
 const canvas = document.querySelector('#game-canvas');
 const game = createGameState();
+let display = calculateDisplay({ width: innerWidth, height: innerHeight, ...game.state.settings, pixelRatio: Math.min(devicePixelRatio, 1.5) });
 const view = createViewController();
 const audio = createAudio({
   bundledClips: Object.fromEntries(['fire', 'electric', 'water'].map(element => [
-    `morph-${element}`, { data: metamorphosisClip, offset: 0.085, label: 'Provided metamorphosis recording' },
+    `morph-${element}`, { data: metamorphosisClip, offset: SHOT_AUDIO_OFFSET, sequence: true, label: 'Provided launch and metamorphosis recording' },
   ])),
 });
 game.state.audio = audio.getStatus();
@@ -35,8 +38,8 @@ try {
   document.body.innerHTML = '<main style="padding:10%;color:#d5fff3;background:#08252b;height:100vh;font-family:system-ui"><h1>The luminous deep needs WebGL</h1><p>Enable hardware acceleration in your browser and reload to enter the cavern.</p></main>';
   throw new Error('WebGL unavailable');
 }
-renderer.setSize(innerWidth, innerHeight);
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.setSize(display.width, display.height, false);
+renderer.setPixelRatio(display.pixelRatio);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.18;
@@ -47,7 +50,7 @@ renderer.shadowMap.needsUpdate = true;
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x102e36);
 scene.fog = new THREE.FogExp2(0x102e36, 0.0085);
-const camera = new THREE.PerspectiveCamera(65, innerWidth / innerHeight, 0.08, 260);
+const camera = new THREE.PerspectiveCamera(65, display.aspect, 0.08, 260);
 camera.position.set(43, 23, 64);
 camera.lookAt(0, 5, -5);
 const hemisphere = new THREE.HemisphereLight(0xa5e7ef, 0x254e3b, 1.55);
@@ -111,7 +114,7 @@ function bindColliders() {
 bindColliders();
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
-const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.38, 0.65, 1.05);
+const bloom = new UnrealBloomPass(new THREE.Vector2(display.width, display.height), 0.38, 0.65, 1.05);
 composer.addPass(bloom);
 composer.addPass(new OutputPass());
 
@@ -300,7 +303,7 @@ function refreshWeapon() {
   audio.reload?.(audioElement(game.state.slugs[game.state.selectedSlug].element));
   ui.update(game.state);
 }
-function audioElement(element) { return element === 'ice' ? 'water' : ['healing', 'light'].includes(element) ? 'electric' : element; }
+function audioElement(element) { return ['ice', 'web'].includes(element) ? 'water' : ['healing', 'light', 'energy'].includes(element) ? 'electric' : element === 'earth' ? 'fire' : element; }
 function disposeObject(root) {
   const seen = new Set();
   root.traverse(o => {
@@ -319,7 +322,7 @@ function disposeObject(root) {
   });
 }
 function clearProjectiles() {
-  for (const p of projectiles) { scene.remove(p.mesh, p.trail); disposeObject(p.mesh); disposeObject(p.trail); }
+  for (const p of projectiles) { audio.cancelShot(p.audioShot); scene.remove(p.mesh, p.trail); disposeObject(p.mesh); disposeObject(p.trail); }
   projectiles.length = 0;
   game.state.slugs.forEach(s => { s.inFlight = false; });
   game.state.flight = { phase: 'ready', slug: '', speed: 0, morphed: false };
@@ -388,31 +391,14 @@ function useSkill(id = 'slug-fu') {
 }
 
 function makeEnemy(x, z, boss = false, camp = null, encounterId = null) {
-  const root = new THREE.Group();
-  const size = boss ? 2.8 : 1;
-  root.position.set(x, world.groundHeight(x, z) + (boss ? 3.2 : 1.2), z);
-  const shell = material(boss ? 0x313b4a : 0x243745, 0x231831, 0.15);
-  const pink = material(0xd17cc9, 0xef4eb2, 1.6);
-  const body = part(root, new THREE.IcosahedronGeometry(0.8 * size, 1), shell, 0, 0, 0);
-  body.scale.y = 0.85;
-  const eye = part(root, new THREE.SphereGeometry(0.22 * size, 12, 8), pink, 0, 0.08 * size, -0.68 * size);
-  for (const side of [-1, 1]) {
-    const horn = part(root, new THREE.ConeGeometry(0.16 * size, 0.85 * size, 5), shell, side * 0.57 * size, 0.6 * size, -0.08);
-    horn.rotation.z = side * -0.35;
-    for (const front of [-1, 1]) {
-      const leg = part(root, new THREE.ConeGeometry(0.13 * size, 1.35 * size, 5), shell, side * 0.7 * size, -0.45 * size, front * 0.43 * size);
-      leg.rotation.z = side * -0.55;
-      part(root, new THREE.SphereGeometry(0.09 * size, 8, 6), pink, side * 0.85 * size, -0.4 * size, front * 0.43 * size);
-    }
-  }
-  const halo = part(root, new THREE.TorusGeometry(1.03 * size, 0.028 * size, 4, 32), pink, 0, 0, 0);
-  halo.rotation.x = Math.PI / 2;
-  const hpGroup = new THREE.Group();
-  hpGroup.position.y = 1.3 * size;
-  part(hpGroup, new THREE.PlaneGeometry(1.45 * size, 0.085 * size), new THREE.MeshBasicMaterial({ color: 0x243b42 }), 0, 0, 0);
-  const hpBar = part(hpGroup, new THREE.PlaneGeometry(1.45 * size, 0.085 * size), new THREE.MeshBasicMaterial({ color: boss ? 0xf090c9 : 0x74eccd }), 0, 0, 0.005);
-  root.add(hpGroup); scene.add(root);
-  const enemy = { root, body, eye, halo, hpGroup, hpBar, boss, hp: boss ? 530 : 100, maxHp: boss ? 530 : 100, radius: boss ? 2.4 : 0.88, home: new THREE.Vector3(x, 0, z), attack: 1 + Math.random() * 2, stagger: 0, dead: false, camp, size, encounterId };
+  const visual = createEnemyVisual(THREE, { boss, variant: enemies.length });
+  const { root } = visual;
+  root.position.set(x, world.groundHeight(x, z) + visual.centerHeight, z);
+  scene.add(root);
+  const enemy = { ...visual, boss, hp: boss ? 530 : 100, maxHp: boss ? 530 : 100, home: new THREE.Vector3(x, 0, z), attack: 1, stagger: 0, dead: false, camp, size: boss ? 2.8 : 1, encounterId, speed: 0, blocked: false };
+  const eye = new THREE.Vector3(x, world.groundHeight(x, z) + visual.height - .12, z);
+  world.collisionWorld.recover(eye, { x: 0, y: 0, z: 0 }, { eyeHeight: visual.height - .12, radius: visual.radius * .8 });
+  root.position.set(eye.x, eye.y - visual.height + .12 + visual.centerHeight, eye.z);
   enemy.brain = createEnemyBrain({ home: enemy.home, boss, difficulty: game.state.settings.difficulty || 'normal' });
   enemies.push(enemy); return enemy;
 }
@@ -507,9 +493,17 @@ function applySettings() {
     sun.shadow.map?.dispose(); sun.shadow.map = null;
   }
   renderer.shadowMap.needsUpdate = true;
-  renderer.setPixelRatio(Math.min(devicePixelRatio, q === 'low' ? 0.85 : q === 'medium' ? 1 : q === 'ultra' ? 2 : 1.5));
   bloom.strength = q === 'ultra' ? 0.43 : 0.38;
-  renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight);
+  resizeDisplay();
+}
+function resizeDisplay() {
+  const q = game.state.settings.quality;
+  display = calculateDisplay({ width: innerWidth, height: innerHeight, ...game.state.settings, pixelRatio: Math.min(devicePixelRatio, q === 'low' ? 0.85 : q === 'medium' ? 1 : q === 'ultra' ? 2 : 1.5) });
+  const style = document.documentElement.style;
+  for (const key of ['width', 'height', 'left', 'top']) style.setProperty(`--game-${key}`, `${display[key]}px`);
+  camera.aspect = display.aspect; camera.updateProjectionMatrix();
+  renderer.setPixelRatio(display.pixelRatio); composer.setPixelRatio(display.pixelRatio);
+  renderer.setSize(display.width, display.height, false); composer.setSize(display.width, display.height);
 }
 function updateCollected() {
   for (const lm of world.landmarks) if (lm.id.startsWith('shard') && lm.object) lm.object.visible = !game.state.collected.includes(lm.id);
@@ -577,12 +571,13 @@ function createProjectile(position, direction, slug, hostile = false) {
   const trail = new THREE.Line(new THREE.BufferGeometry().setFromPoints([position, position]), new THREE.LineBasicMaterial({ color: slug.color, transparent: true, opacity: 0.5 }));
   scene.add(trail);
   const speed = hostile ? slug.speed : 18;
-  const p = { mesh, proto, morph, trail, slug, serial: ++shotSerial, velocity: direction.clone().multiplyScalar(speed), speed, damage: slug.damage, element: slug.element, color: slug.color, hostile, life: hostile ? 4 : 2.8, phase: 'protoform', morphed: false, morphAge: 0, radius: hostile ? 0.18 : 0.12 };
+  const p = { mesh, proto, morph, trail, slug, serial: ++shotSerial, velocity: direction.clone().multiplyScalar(speed), speed, damage: slug.damage, element: slug.element, color: slug.color, hostile, life: hostile ? 4 : 2.8, flightTime: 0, phase: 'protoform', morphed: false, morphAge: 0, radius: hostile ? 0.18 : 0.12 };
   projectiles.push(p);
   if (!hostile) { game.state.slugs.find(s => s.id === slug.id).inFlight = true; combatStats.shots++; }
   return p;
 }
 function returnSlug(p) {
+  audio.cancelShot(p.audioShot);
   if (p.hostile) { p.life = 0; return; }
   p.phase = 'returning'; p.life = 8; p.speed = 40; p.proto.visible = true; p.morph.visible = false;
   p.proto.scale.setScalar(0.28); p.mesh.scale.setScalar(1);
@@ -618,14 +613,33 @@ function shoot() {
   let destination = target ? target.root.position : (view.thirdPerson ? camera.position : player).clone().addScaledVector(forward, 60);
   if (view.thirdPerson && !target) { const t = world.collisionWorld.segmentHit(camera.position, destination); if (t !== null) destination = camera.position.clone().lerp(destination, t); }
   forward.subVectors(destination, start).normalize();
-  createProjectile(start, forward, slug);
-  audio.shoot(audioElement(slug.element)); recoil = 1;
+  const audioShot = audio.shoot(audioElement(slug.element));
+  const projectile = createProjectile(start, forward, slug); projectile.audioShot = audioShot;
+  projectile.firedAt = elapsed; recoil = 1;
   spawnBurst(start.clone().add(forward.clone().multiplyScalar(0.5)), slug.color, 5);
 }
 function damageEnemy(enemy, projectile) {
   enemy.hp -= projectile.damage * (projectile.morphed ? (projectile.slug.morphMultiplier || 1.6) : 1);
   combatStats.hits++;
-  enemy.stagger = projectile.element === 'ice' ? 1.8 : projectile.element === 'light' ? 0.9 : projectile.element === 'electric' ? 0.75 : 0.18;
+  enemy.stagger = projectile.element === 'earth' ? (projectile.slug.staggerDuration || 1.2) : projectile.element === 'ice' ? 1.8 : projectile.element === 'light' ? 0.9 : projectile.element === 'electric' ? 0.75 : 0.18;
+  if (projectile.element === 'web') {
+    enemy.rooted = projectile.slug.rootDuration || 2.6;
+    if (!enemy.webEffect) {
+      enemy.webEffect = new THREE.Group(); enemy.webEffect.name = 'Arachnet web binding';
+      const silk = new THREE.MeshBasicMaterial({ color: 0xd9f2e7, transparent: true, opacity: .8 });
+      for (const y of [-.65, -.2, .25, .7]) {
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(enemy.radius * 1.1, .014, 5, 20), silk);
+        ring.rotation.x = Math.PI / 2; ring.position.y = y; enemy.webEffect.add(ring);
+      }
+      enemy.root.add(enemy.webEffect);
+    }
+    enemy.webEffect.visible = true;
+    ui.toast('Web bind · hostile movement stopped', 'info');
+  }
+  if (projectile.element === 'earth') {
+    const direction = projectile.velocity.clone().setY(0).normalize();
+    moveEnemy(enemy, { move: { x: direction.x, z: direction.z }, speedMultiplier: 1 }, (projectile.slug.knockback || 2.8) / (enemy.boss ? 2.5 : 3));
+  }
   enemy.eye.material.emissiveIntensity = 5;
   audio.impact(audioElement(projectile.element));
   spawnBurst(projectile.mesh.position, projectile.color, 12);
@@ -653,7 +667,7 @@ function hurt(amount) {
 }
 function updateProjectiles(dt) {
   for (let i = projectiles.length - 1; i >= 0; i--) {
-    const p = projectiles[i]; p.life -= dt;
+    const p = projectiles[i]; p.life -= dt; p.flightTime += dt;
     const previous = p.mesh.position.clone();
     if (p.phase === 'returning') {
       launcher.updateWorldMatrix(true, false);
@@ -677,7 +691,7 @@ function updateProjectiles(dt) {
         if (!p.morphed && p.speed >= (p.slug.morphSpeed || 44.7)) {
           p.morphed = true; p.phase = 'velocimorph'; p.morphAge = 0;
           p.proto.visible = false; p.morph.visible = true; p.radius = 0.25;
-          combatStats.morphs++; audio.morph?.(audioElement(p.element));
+          combatStats.morphs++; p.morphedAt = elapsed; p.morphFlightTime = p.flightTime; audio.morph?.(audioElement(p.element), p.audioShot);
           spawnBurst(p.mesh.position, p.color, 9);
         }
         if (p.morphed) {
@@ -698,7 +712,7 @@ function updateProjectiles(dt) {
       if (p.hostile) {
         consider(segmentCapsuleHit(previous, end, { x: player.x, y: player.y - 0.72, z: player.z }, 0.38 + p.radius, 0.55), { kind: 'player' });
       } else {
-        for (const enemy of enemies) if (!enemy.dead) consider(segmentSphereHit(previous, end, enemy.root.position, enemy.radius + p.radius), { kind: 'enemy', enemy });
+        for (const enemy of enemies) if (!enemy.dead) consider(enemy.boss ? segmentSphereHit(previous, end, enemy.root.position, enemy.radius + p.radius) : segmentCapsuleHit(previous, end, { x: enemy.root.position.x, y: enemy.root.position.y - enemy.centerHeight + enemy.height / 2, z: enemy.root.position.z }, enemy.radius + p.radius, Math.max(0, enemy.height / 2 - enemy.radius)), { kind: 'enemy', enemy });
       }
       p.mesh.position.copy(previous).lerp(end, hit ? hitT : 1);
       p.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, -1), p.velocity.clone().normalize());
@@ -732,39 +746,56 @@ function visibleBetween(start, end) {
   return !colliders.some(c => segmentCapsuleHit(start, end, { x: c.x, y: (c.bottom + c.top) / 2, z: c.z }, c.radius + 0.08, Math.max(0, (c.top - c.bottom) / 2)) !== null);
 }
 function moveEnemy(enemy, intent, dt) {
-  const distance = dt * (enemy.boss ? 2.5 : 3) * intent.speedMultiplier;
-  const x = enemy.root.position.x, z = enemy.root.position.z;
-  const canStand = (nx, nz) => Math.abs(nx) < 87 && Math.abs(nz) < 87
-    && Math.abs(world.groundHeight(nx, nz) - world.groundHeight(x, z)) < 0.55
-    && !colliders.some(c => Math.hypot(nx - c.x, nz - c.z) < c.radius + enemy.radius * 0.65 && enemy.root.position.y - 0.5 < c.top && enemy.root.position.y + 0.5 > c.bottom);
-  const nx = x + intent.move.x * distance, nz = z + intent.move.z * distance;
-  if (canStand(nx, nz)) { enemy.root.position.x = nx; enemy.root.position.z = nz; }
-  else if (canStand(nx, z)) enemy.root.position.x = nx;
-  else if (canStand(x, nz)) enemy.root.position.z = nz;
+  if (enemy.rooted > 0) { enemy.speed = 0; return; }
+  const speed = (enemy.boss ? 2.5 : 3) * intent.speedMultiplier;
+  const original = enemy.root.position.clone();
+  const eyeHeight = enemy.height - .12, radius = enemy.radius * .8;
+  const eye = new THREE.Vector3(original.x, original.y - enemy.centerHeight + eyeHeight, original.z);
+  const nx = eye.x + intent.move.x * speed * dt, nz = eye.z + intent.move.z * speed * dt;
+  const floor = world.groundHeight(eye.x, eye.z), nextFloor = world.groundHeight(nx, nz);
+  let blocked = Math.hypot(nx, nz) > 86 || Math.abs(nextFloor - floor) > .5;
+  if (!blocked) {
+    const velocity = { x: intent.move.x * speed, y: 0, z: intent.move.z * speed };
+    world.collisionWorld.move(eye, { x: nx, y: nextFloor + eyeHeight, z: nz }, velocity, { eyeHeight, radius });
+    // Separation keeps roaming guards from occupying one another or the player.
+    for (const other of enemies) {
+      if (other === enemy || other.dead) continue;
+      const dx = eye.x - other.root.position.x, dz = eye.z - other.root.position.z, distance = Math.hypot(dx, dz), minimum = radius + other.radius * .8;
+      if (distance > .001 && distance < minimum) { eye.x += dx / distance * (minimum - distance); eye.z += dz / distance * (minimum - distance); }
+    }
+    const dx = eye.x - player.x, dz = eye.z - player.z, distance = Math.hypot(dx, dz), minimum = radius + .38;
+    if (distance > .001 && distance < minimum) { eye.x += dx / distance * (minimum - distance); eye.z += dz / distance * (minimum - distance); }
+    world.collisionWorld.move(eye, { ...eye }, velocity, { eyeHeight, radius });
+    enemy.root.position.set(eye.x, eye.y - eyeHeight + enemy.centerHeight, eye.z);
+  }
+  const moved = Math.hypot(enemy.root.position.x - original.x, enemy.root.position.z - original.z);
+  enemy.speed = dt > 0 ? moved / dt : 0;
+  enemy.blocked = blocked || (Math.hypot(intent.move.x, intent.move.z) > .1 && moved < speed * dt * .2);
 }
 function updateEnemies(dt) {
   for (let i = 0; i < enemies.length; i++) {
     const e = enemies[i]; if (e.dead) continue;
     const distance = player.distanceTo(e.root.position);
     e.stagger = Math.max(0, e.stagger - dt);
-    if (distance < (e.boss ? 42 : 28) && (!e.nextSight || elapsed >= e.nextSight)) {
-      e.hasSight = visibleBetween(e.root.position, player); e.nextSight = elapsed + 0.12;
+    e.rooted = Math.max(0, (e.rooted || 0) - dt);
+    if (e.webEffect) e.webEffect.visible = e.rooted > 0;
+    if (!e.nextSight || elapsed >= e.nextSight) {
+      e.hasSight = distance < (e.boss ? 42 : 28) && visibleBetween(e.root.position, player); e.nextSight = elapsed + .12;
     }
-    const intent = e.brain.update(dt, { position: e.root.position, target: player, lineOfSight: Boolean(e.hasSight), stagger: e.stagger });
+    const intent = e.brain.update(dt, { position: e.root.position, target: player, lineOfSight: Boolean(e.hasSight), stagger: e.stagger, blocked: e.blocked });
     e.phase = intent.phase;
     moveEnemy(e, intent, dt);
-    if (distance < 38 && intent.phase !== 'return') { e.root.lookAt(player.x, e.root.position.y, player.z); e.root.rotateY(Math.PI); }
+    if (intent.lookAt) { e.root.lookAt(intent.lookAt.x, e.root.position.y, intent.lookAt.z); e.root.rotateY(Math.PI); }
+    else if (Math.hypot(intent.move.x, intent.move.z) > .05) e.root.rotation.y = Math.atan2(-intent.move.x, -intent.move.z);
+    e.updatePose({ time: elapsed, dt, speed: e.speed, phase: intent.phase, telegraph: intent.telegraph, stagger: e.stagger, aimPitch: Math.atan2(player.y - e.root.position.y, Math.max(1, distance)) });
+    e.root.updateMatrixWorld(true);
     if (intent.fire && visibleBetween(e.root.position, player)) {
-      const direction = new THREE.Vector3(intent.aimPoint.x, intent.aimPoint.y, intent.aimPoint.z).sub(e.root.position).normalize();
-      createProjectile(e.root.position.clone().addScaledVector(direction, e.radius + 0.2), direction, { color: '#ee79cc', damage: (e.boss ? 27 : 16) * intent.damageMultiplier, speed: e.boss ? 20 : 15, element: 'corrupt' }, true);
+      const muzzle = e.muzzle.getWorldPosition(new THREE.Vector3());
+      const direction = new THREE.Vector3(intent.aimPoint.x, intent.aimPoint.y, intent.aimPoint.z).sub(muzzle).normalize();
+      createProjectile(muzzle, direction, { color: '#ee79cc', damage: (e.boss ? 27 : 16) * intent.damageMultiplier, speed: e.boss ? 20 : 15, element: 'corrupt' }, true);
     }
-    e.root.position.y = world.groundHeight(e.root.position.x, e.root.position.z) + (e.boss ? 3.2 : 1.25) + Math.sin(elapsed * 2 + i) * 0.12;
-    e.halo.rotation.z = elapsed * (intent.phase === 'windup' ? 2.5 : 0.5);
-    e.halo.scale.setScalar(1 + intent.telegraph * 0.24);
     e.hpGroup.quaternion.copy(e.root.quaternion).invert().multiply(camera.quaternion); e.hpBar.scale.x = Math.max(0, e.hp / e.maxHp);
-    e.hpGroup.visible = distance < 30;
-    e.eye.material.color.set(intent.phase === 'windup' ? 0xffc479 : intent.phase === 'recovery' ? 0x66d7cc : 0xd17cc9);
-    e.eye.material.emissiveIntensity = intent.phase === 'windup' ? 2 + intent.telegraph * 4 : THREE.MathUtils.lerp(e.eye.material.emissiveIntensity, intent.phase === 'recovery' ? 0.5 : 1.6, dt * 8);
+    e.hpGroup.visible = distance < 24 && e.hasSight;
   }
 }
 function scan() {
@@ -784,6 +815,9 @@ function movePlayer(dt) {
   forward.set(-Math.sin(yaw), 0, -Math.cos(yaw)); right.set(Math.cos(yaw), 0, -Math.sin(yaw));
   const move = new THREE.Vector3().addScaledVector(forward, zInput).addScaledVector(right, xInput);
   if (move.lengthSq() > 1) move.normalize();
+  playerColliders.length = 0;
+  if (!world.collisionReady) playerColliders.push(...colliders);
+  for (const enemy of enemies) if (!enemy.dead) playerColliders.push({ x: enemy.root.position.x, z: enemy.root.position.z, radius: enemy.radius * .8, bottom: enemy.root.position.y - enemy.centerHeight, top: enemy.root.position.y - enemy.centerHeight + enemy.height });
   const before = player.clone(), wasGrounded = character.grounded, previousFall = character.velocity.y;
   character.step(dt, { x: move.x, z: move.z, jump: jumpQueued || keys.has(' '), sprint: keys.has('shift'), aiming });
   jumpQueued = false;
@@ -844,7 +878,7 @@ function updateMarkers() {
     if (mode === 'menu' || panelOpen || !active) { label.style.display = 'none'; continue; }
     screenVector.set(lm.position.x, lm.position.y + (lm.id === 'boss' ? 10 : 4.5), lm.position.z).project(camera);
     if (screenVector.z > 1 || screenVector.z < -1 || Math.abs(screenVector.x) > 0.94 || Math.abs(screenVector.y) > 0.8) { label.style.display = 'none'; continue; }
-    label.style.display = 'flex'; label.style.left = `${(screenVector.x * 0.5 + 0.5) * innerWidth}px`; label.style.top = `${(-screenVector.y * 0.5 + 0.5) * innerHeight}px`;
+    label.style.display = 'flex'; label.style.left = `${(screenVector.x * 0.5 + 0.5) * display.width}px`; label.style.top = `${(-screenVector.y * 0.5 + 0.5) * display.height}px`;
     label.querySelector('small').textContent = `${Math.round(Math.hypot(player.x - lm.position.x, player.z - lm.position.z))} m`;
   }
 }
@@ -930,7 +964,7 @@ canvas.addEventListener('touchmove', e => {
 canvas.addEventListener('touchend', () => { touchPoint = null; });
 window.addEventListener('blur', () => { keys.clear(); focusToggled = false; mouse.reset(); if (mode === 'playing') openPanel('pause'); });
 window.addEventListener('beforeunload', () => { if (mode !== 'menu') game.save(player); });
-window.addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); });
+window.addEventListener('resize', resizeDisplay);
 
 const clock = new THREE.Clock();
 function frame() {
@@ -967,6 +1001,7 @@ function frame() {
   game.state.settings.quality === 'low' ? renderer.render(scene, camera) : composer.render();
 }
 applyAtmosphere();
+resizeDisplay();
 ui.setMode('menu'); ui.update(game.state); frame();
 requestAnimationFrame(() => {
   prepareImportedModels().then(() => {
@@ -985,6 +1020,7 @@ if (import.meta.env.DEV) {
   window.__SLUGTERRA__ = {
     game, player, enemies, camera, renderer, character, projectiles, combatStats, audio, launcher, blaster, mouse, colliders,
     get world() { return world; },
+    get display() { return { ...display }; },
     get viewMode() { return view.mode; },
     get playerAvatar() { return playerAvatar; },
     get aiming() { return aiming; },
