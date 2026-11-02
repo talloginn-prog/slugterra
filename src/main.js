@@ -13,10 +13,15 @@ import metamorphosisClip from './assets/audio/slugterra-metamorphosis-shot.mp3?i
 import { createSlugModel, createBlasterModel } from './models.js';
 import { createCharacterPhysics, segmentSphereHit, segmentCapsuleHit, firstTerrainHit } from './physics.js';
 import { createMouseControls } from './input.js';
+import { createSceneCollision } from './collision.js';
+import { prepareImportedModels, getImportedModelStatus, createImportedCharacter, applyImportedSlug, createImportedBlaster } from './imported-models.js';
+import { registerImportedModels } from './model-registry.js';
+import { createViewController } from './camera-view.js';
 import './style.css';
 
 const canvas = document.querySelector('#game-canvas');
 const game = createGameState();
+const view = createViewController();
 const audio = createAudio({
   bundledClips: Object.fromEntries(['fire', 'electric', 'water'].map(element => [
     `morph-${element}`, { data: metamorphosisClip, offset: 0.085, label: 'Provided metamorphosis recording' },
@@ -59,13 +64,38 @@ scene.add(sun);
 const fill = new THREE.DirectionalLight(0x69cfff, 1.4);
 fill.position.set(-25, 18, -45);
 scene.add(fill);
-let world = createCavern(THREE, { id: game.state.currentCavern || 'luminous', quality: game.state.settings.quality });
+function prepareWorld(candidate) {
+  if (candidate.id === 'luminous') {
+    const guide = candidate.landmarks.find(item => item.id === 'guide').position;
+    addActorCollider(candidate, guide.x, guide.z, 0.36, 1.95);
+    addImportedGuide(candidate);
+  }
+  candidate.collisionWorld = createSceneCollision(candidate.group);
+  return candidate;
+}
+function addActorCollider(candidate, x, z, radius, height) {
+  const proxy = new THREE.Mesh(new THREE.CapsuleGeometry(radius, height - radius * 2, 4, 8), new THREE.MeshBasicMaterial());
+  proxy.position.set(x, candidate.groundHeight(x, z) + height / 2, z);
+  proxy.visible = false; proxy.userData.collisionSolid = true; proxy.userData.collisionProxy = true;
+  candidate.group.add(proxy);
+}
+function addImportedGuide(candidate) {
+  if (candidate.id !== 'luminous' || candidate.importedGuide) return false;
+  const npc = createImportedCharacter(THREE, { height: 1.9 });
+  if (!npc) return false;
+  npc.position.set(8, candidate.groundHeight(8, 44), 44); candidate.group.add(npc); candidate.importedGuide = npc;
+  addActorCollider(candidate, 8, 44, 0.4, 1.9);
+  candidate.interactables.push({ id: 'eli-contact', type: 'npc', role: 'expedition', name: 'Eli Shane', position: { x: 8, y: npc.position.y, z: 44 }, color: 0xffb16e, description: 'Watch the sentinels before you fire. Move when their eyes charge, use solid cover, and keep your companions close. The passage lifts connect Haven to the other expeditions.' });
+  return true;
+}
+let world = prepareWorld(createCavern(THREE, { id: game.state.currentCavern || 'luminous', quality: game.state.settings.quality }));
 scene.add(world.group);
 const colliders = [];
+const playerColliders = [];
 function bindColliders() {
   colliders.length = 0;
-  if (world.colliders) { colliders.push(...world.colliders); return; }
-  world.group.traverse(object => {
+  if (world.colliders) colliders.push(...world.colliders);
+  else world.group.traverse(object => {
   if (!object.isMesh) return;
   if (object.isInstancedMesh && object.count < 100) object.castShadow = true;
   const p = object.geometry?.parameters;
@@ -75,6 +105,8 @@ function bindColliders() {
     for (let i = 0; i < object.count; i++) { object.getMatrixAt(i, matrix); matrix.decompose(position, rotation, scale); colliders.push({ x: position.x, z: position.z, radius: scale.x, bottom: position.y - scale.y / 2, top: position.y + scale.y / 2 }); }
   }
   });
+  playerColliders.length = 0;
+  if (!world.collisionReady) playerColliders.push(...colliders);
 }
 bindColliders();
 const composer = new EffectComposer(renderer);
@@ -91,7 +123,7 @@ const simulationStep = 1 / 120;
 let currentInteraction = null, elapsed = 0, bossSpawned = false;
 const keys = new Set();
 const player = new THREE.Vector3(world.spawn.x, world.groundHeight(world.spawn.x, world.spawn.z) + 1.85, world.spawn.z);
-const character = createCharacterPhysics({ position: player, groundHeight: (x, z) => world.groundHeight(x, z), colliders, bounds: 88 });
+const character = createCharacterPhysics({ position: player, groundHeight: (x, z) => world.groundHeight(x, z), colliders: playerColliders, getCollisionWorld: () => world.collisionWorld, bounds: 88 });
 const projectiles = [], bursts = [], enemies = [], floatingLabels = [];
 const forward = new THREE.Vector3(), right = new THREE.Vector3();
 const screenVector = new THREE.Vector3();
@@ -136,6 +168,7 @@ const ui = createUI({
   equipBlaster: id => { const result = game.equipBlaster(id); if (result.ok) refreshWeapon(); return result; },
   learnSkill: id => game.learnSkill(id),
   useSkill,
+  toggleView,
   fire: shoot,
   touch: (key, pressed) => { pressed ? keys.add(key.toLowerCase()) : keys.delete(key.toLowerCase()); },
   interact,
@@ -194,11 +227,76 @@ const launcher = blaster.group;
 camera.add(launcher); scene.add(camera);
 launcher.position.set(0.3, -0.3, -0.64);
 launcher.scale.setScalar(0.8); launcher.visible = false;
+let playerAvatar = null, avatarWeapon = null, avatarWeaponId = null, avatarMotion = [];
+function refreshPlayerAvatar() {
+  if (playerAvatar) { scene.remove(playerAvatar); disposeObject(playerAvatar); }
+  playerAvatar = createImportedCharacter(THREE, { height: 1.85 }) || new THREE.Group();
+  if (!playerAvatar.children.length) {
+    part(playerAvatar, new THREE.CapsuleGeometry(0.28, 0.6, 4, 8), material(0x263c49), 0, 1, 0);
+    part(playerAvatar, new THREE.SphereGeometry(0.23, 12, 8), material(0xe3b88d), 0, 1.62, 0);
+  }
+  scene.add(playerAvatar); playerAvatar.visible = false; avatarMotion = [];
+  const bones = new Map();
+  playerAvatar.traverse(node => { if (node.isBone) bones.set(node.name.toLowerCase().replace(/[^a-z]/g, ''), node); });
+  const aimBone = (name, next, target) => {
+    const bone = bones.get(name), child = bones.get(next); if (!bone || !child) return;
+    playerAvatar.updateMatrixWorld(true);
+    const direction = child.getWorldPosition(new THREE.Vector3()).sub(bone.getWorldPosition(new THREE.Vector3())).normalize();
+    const rotation = new THREE.Quaternion().setFromUnitVectors(direction, target.normalize()).multiply(bone.getWorldQuaternion(new THREE.Quaternion()));
+    bone.quaternion.copy(bone.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(rotation));
+  };
+  for (const side of ['l', 'r']) {
+    const arm = bones.get(`upperarm${side}`), sign = arm ? Math.sign(arm.getWorldPosition(new THREE.Vector3()).x) || 1 : 1;
+    aimBone(`upperarm${side}`, `forearm${side}`, new THREE.Vector3(sign * 0.12, -0.9, -0.3));
+    aimBone(`forearm${side}`, `hand${side}`, new THREE.Vector3(-sign * 0.15, -0.18, -1));
+    for (const name of [`thigh${side}`, `shin${side}`]) { const bone = bones.get(name); if (bone) avatarMotion.push({ bone, rest: bone.quaternion.clone(), side: side === 'l' ? 1 : -1, knee: name.startsWith('shin') }); }
+  }
+  avatarWeapon = null; avatarWeaponId = null; refreshAvatarWeapon();
+}
+function refreshAvatarWeapon() {
+  if (!playerAvatar) return;
+  const id = game.state.equippedBlaster;
+  if (avatarWeapon && avatarWeaponId === id) return;
+  if (avatarWeapon) { playerAvatar.remove(avatarWeapon); disposeObject(avatarWeapon); }
+  avatarWeapon = createImportedBlaster(THREE, { id }); avatarWeaponId = id;
+  if (avatarWeapon) { avatarWeapon.position.set(0.30, 1.2, -0.23); playerAvatar.add(avatarWeapon); }
+}
+function updatePlayerAvatar() {
+  if (!playerAvatar) return;
+  playerAvatar.position.set(player.x, player.y - 1.85, player.z); playerAvatar.rotation.y = yaw;
+  playerAvatar.visible = view.thirdPerson && mode !== 'menu' && camera.position.distanceTo(player) > 0.65;
+  const speed = Math.hypot(character.velocity.x, character.velocity.z), stride = character.grounded ? Math.min(1, speed / 6.5) : 0;
+  for (const joint of avatarMotion) { joint.bone.quaternion.copy(joint.rest); joint.bone.rotateX(joint.knee ? Math.max(0, Math.sin(elapsed * 9 * joint.side)) * stride * 0.3 : Math.sin(elapsed * 9) * joint.side * stride * 0.28); }
+  if (avatarWeapon) avatarWeapon.rotation.x = pitch * 0.8 + recoil * 0.08;
+}
+function placeCamera() {
+  const at = view.cameraPosition(player, yaw, pitch, (a, b) => {
+    const geometry = world.collisionWorld.segmentHit(a, b), terrain = firstTerrainHit(a, b, world.groundHeight, 0.22);
+    return geometry === null ? terrain : terrain === null ? geometry : Math.min(geometry, terrain);
+  });
+  camera.position.set(at.x, at.y, at.z); camera.rotation.set(pitch, yaw, 0, 'YXZ');
+}
+function toggleView() {
+  if (mode !== 'playing' || panelOpen) return;
+  view.toggle(); if (!playerAvatar) refreshPlayerAvatar();
+  placeCamera(); updatePlayerAvatar(); launcher.visible = !view.thirdPerson;
+  game.state.viewMode = view.mode; ui.update(game.state);
+  ui.toast(view.thirdPerson ? 'Third-person view · P switches back' : 'First-person view · P switches back', 'info');
+}
+function muzzlePosition() {
+  if (view.thirdPerson) {
+    updatePlayerAvatar();
+    if (avatarWeapon) { avatarWeapon.updateWorldMatrix(true, false); return avatarWeapon.localToWorld(blaster.muzzle.clone()); }
+    return player.clone().add(new THREE.Vector3(Math.cos(yaw) * 0.3, -0.5, -Math.sin(yaw) * 0.3));
+  }
+  launcher.updateWorldMatrix(true, false); return launcher.localToWorld(blaster.muzzle.clone());
+}
 function refreshWeapon() {
   blaster.setRoster?.(game.state.slugs);
   blaster.setSlug(game.state.selectedSlug);
   const weapon = BLASTERS.find(b => b.id === game.state.equippedBlaster) || BLASTERS[0];
   blaster.setWeapon?.({ ...weapon, tier: weapon.id === 'breaker' ? 2 : weapon.id === 'rapid' ? 1 : 0, accent: weapon.id === 'breaker' ? '#f2a96d' : weapon.id === 'rapid' ? '#7cd4f5' : '#f58a36' });
+  refreshAvatarWeapon();
   audio.reload?.(audioElement(game.state.slugs[game.state.selectedSlug].element));
   ui.update(game.state);
 }
@@ -206,6 +304,10 @@ function audioElement(element) { return element === 'ice' ? 'water' : ['healing'
 function disposeObject(root) {
   const seen = new Set();
   root.traverse(o => {
+    // SkeletonUtils clones own their bone textures even when mesh resources
+    // remain shared with the page-lifetime imported-model cache.
+    if (o.isSkinnedMesh && o.skeleton && !seen.has(o.skeleton)) { seen.add(o.skeleton); o.skeleton.dispose(); }
+    if (o.userData.importedSharedResources) return;
     if (o.isInstancedMesh) o.dispose();
     if (o.geometry && !seen.has(o.geometry)) { seen.add(o.geometry); o.geometry.dispose(); }
     for (const material of (Array.isArray(o.material) ? o.material : [o.material])) {
@@ -238,9 +340,11 @@ function applyAtmosphere() {
   renderer.shadowMap.needsUpdate = true;
 }
 function rebuildCavernDetails() {
-  const nextWorld = createCavern(THREE, { id: game.state.currentCavern, quality: game.state.settings.quality });
+  const nextWorld = prepareWorld(createCavern(THREE, { id: game.state.currentCavern, quality: game.state.settings.quality }));
+  world.collisionWorld?.dispose();
   scene.remove(world.group); disposeObject(world.group);
   world = nextWorld; scene.add(world.group); bindColliders();
+  world.collisionWorld.recover(player, character.velocity);
   rebuildMarkers(); updateCollected(); applyAtmosphere(); updateInteractions();
 }
 function loadCavern(id, { restoring = false, position = null } = {}) {
@@ -248,16 +352,16 @@ function loadCavern(id, { restoring = false, position = null } = {}) {
   if (!restoring && game.state.slugs.some(slug => slug.inFlight)) {
     ui.toast('Wait for your companions to return before travelling.', 'info'); return false;
   }
-  const nextWorld = createCavern(THREE, { id, quality: game.state.settings.quality });
+  const nextWorld = prepareWorld(createCavern(THREE, { id, quality: game.state.settings.quality }));
   if (!restoring) {
     game.save(player);
     const result = game.travel(id);
-    if (!result.ok) { disposeObject(nextWorld.group); return false; }
+    if (!result.ok) { nextWorld.collisionWorld.dispose(); disposeObject(nextWorld.group); return false; }
   }
   clearProjectiles(); clearBursts();
   for (const enemy of enemies) { scene.remove(enemy.root); disposeObject(enemy.root); }
   enemies.length = 0;
-  scene.remove(world.group); disposeObject(world.group);
+  world.collisionWorld?.dispose(); scene.remove(world.group); disposeObject(world.group);
   world = nextWorld; scene.add(world.group); bindColliders();
   const destination = position || game.state.position || world.spawn;
   const x = THREE.MathUtils.clamp(destination.x ?? world.spawn.x, -85, 85);
@@ -353,6 +457,7 @@ function startGame(fresh) {
   for (const b of bursts) { scene.remove(b.points); b.points.geometry.dispose(); b.points.material.dispose(); }
   bursts.length = 0;
   const result = game.start({ fresh });
+  game.state.viewMode = view.mode;
   if (world.id !== game.state.currentCavern) loadCavern(game.state.currentCavern, { restoring: true, position: result.position || game.state.position });
   const p = result.event === 'restored' ? result.position : { x: world.spawn.x, z: world.spawn.z };
   player.set(p.x, world.groundHeight(p.x, p.z) + 1.85, p.z);
@@ -360,7 +465,7 @@ function startGame(fresh) {
   pitch = 0;
   keys.clear(); jumpQueued = false; focusToggled = false; mouse.reset(); character.reset(); simulationRemainder = 0;
   panelOpen = false; ui.closeDialog(); mode = 'playing'; ui.setMode(mode);
-  launcher.visible = true;
+  launcher.visible = !view.thirdPerson;
   populateEnemies(); applySettings(); applyAtmosphere(); updateCollected(); refreshWeapon(); rebuildPets();
   ui.toast(result.event === 'restored' ? 'Welcome back to the luminous deep.' : 'Welcome to Haven. Approach Ranger Kael at the amber beacon. Press E to speak.', 'quest');
   requestPointer();
@@ -496,7 +601,7 @@ function aimTarget() {
   let best = null, bestScore = 0.965;
   for (const enemy of enemies) {
     if (enemy.dead) continue;
-    targetLine.subVectors(enemy.root.position, player);
+    targetLine.subVectors(enemy.root.position, camera.position);
     const distance = targetLine.length();
     const dot = targetLine.normalize().dot(forward);
     if (distance < 42 && dot > bestScore) { best = enemy; bestScore = dot; }
@@ -509,9 +614,9 @@ function shoot() {
   const slug = game.fire(); if (!slug) return;
   camera.getWorldDirection(forward);
   const target = aimTarget();
-  launcher.updateWorldMatrix(true, false);
-  const start = launcher.localToWorld(blaster.muzzle.clone());
-  const destination = target ? target.root.position : player.clone().addScaledVector(forward, 60);
+  const start = muzzlePosition();
+  let destination = target ? target.root.position : (view.thirdPerson ? camera.position : player).clone().addScaledVector(forward, 60);
+  if (view.thirdPerson && !target) { const t = world.collisionWorld.segmentHit(camera.position, destination); if (t !== null) destination = camera.position.clone().lerp(destination, t); }
   forward.subVectors(destination, start).normalize();
   createProjectile(start, forward, slug);
   audio.shoot(audioElement(slug.element)); recoil = 1;
@@ -552,7 +657,7 @@ function updateProjectiles(dt) {
     const previous = p.mesh.position.clone();
     if (p.phase === 'returning') {
       launcher.updateWorldMatrix(true, false);
-      const home = launcher.localToWorld(new THREE.Vector3(0, 0.02, 0.03));
+      const home = view.thirdPerson ? muzzlePosition() : launcher.localToWorld(new THREE.Vector3(0, 0.02, 0.03));
       const offset = home.sub(p.mesh.position), distance = offset.length();
       if (distance <= dt * 40 + 0.25 || p.life <= 0) { removeProjectile(i); continue; }
       p.velocity.copy(offset).normalize().multiplyScalar(40);
@@ -584,7 +689,8 @@ function updateProjectiles(dt) {
       let hit = null, hitT = 2;
       const consider = (t, value) => { if (t !== null && t < hitT) { hitT = t; hit = value; } };
       consider(firstTerrainHit(previous, end, world.groundHeight, p.radius), { kind: 'terrain' });
-      for (const obstacle of colliders) {
+      consider(world.collisionWorld?.segmentHit(previous, end) ?? null, { kind: 'obstacle' });
+      for (const obstacle of world.collisionReady ? [] : colliders) {
         const bottom = obstacle.bottom ?? world.groundHeight(obstacle.x, obstacle.z);
         const top = obstacle.top ?? bottom + 30;
         consider(segmentCapsuleHit(previous, end, { x: obstacle.x, y: (bottom + top) / 2, z: obstacle.z }, obstacle.radius + p.radius, (top - bottom) / 2), { kind: 'obstacle' });
@@ -622,6 +728,7 @@ function updateProjectiles(dt) {
 }
 function visibleBetween(start, end) {
   if (firstTerrainHit(start, end, world.groundHeight, 0.08) !== null) return false;
+  if (world.collisionReady) return world.collisionWorld.segmentHit(start, end) === null;
   return !colliders.some(c => segmentCapsuleHit(start, end, { x: c.x, y: (c.bottom + c.top) / 2, z: c.z }, c.radius + 0.08, Math.max(0, (c.top - c.bottom) / 2)) !== null);
 }
 function moveEnemy(enemy, intent, dt) {
@@ -692,13 +799,13 @@ function movePlayer(dt) {
       audio.footstep?.(wet ? 'water' : 'stone', keys.has('shift') ? 1.3 : 1); footstepDistance = 0;
     }
   }
-  camera.position.copy(player); camera.rotation.set(pitch, yaw, 0, 'YXZ');
+  placeCamera();
   if (mouse.firing || keys.has('f')) shoot();
 }
 function updateView(dt) {
-  camera.position.copy(player);
+  placeCamera();
   const speed = Math.hypot(character.velocity.x, character.velocity.z);
-  if (speed > 0.2 && character.grounded) camera.position.y += Math.sin(elapsed * (speed > 7 ? 13 : 9)) * Math.min(0.04, speed * 0.006);
+  if (!view.thirdPerson && speed > 0.2 && character.grounded) camera.position.y += Math.sin(elapsed * (speed > 7 ? 13 : 9)) * Math.min(0.04, speed * 0.006);
   camera.rotation.set(pitch, yaw, 0, 'YXZ');
   const blend = 1 - Math.exp(-12 * dt);
   const fov = THREE.MathUtils.lerp(camera.fov, aiming ? 45 : 65, blend);
@@ -770,7 +877,7 @@ game.subscribe((state, event) => {
   ui.update(state);
 });
 document.addEventListener('keydown', event => {
-  if (event.target.matches('input,select,textarea') || event.repeat && ['e', 'escape', 'q', 'c', 'r', 'k'].includes(event.key.toLowerCase())) return;
+  if (event.target.matches('input,select,textarea') || event.repeat && ['e', 'escape', 'q', 'c', 'r', 'k', 'p'].includes(event.key.toLowerCase())) return;
   const key = event.key.toLowerCase();
   if (mode === 'playing') {
     keys.add(key);
@@ -781,6 +888,7 @@ document.addEventListener('keydown', event => {
     if (key === 'e') interact();
     if (key === 'q') scan();
     if (key === 'r') { const result = useSkill('slug-fu'); if (!result.ok) ui.toast(result.message, 'info'); }
+    if (key === 'p') toggleView();
     if (key === 'k') openPanel('skills');
     if (['1', '2', '3'].includes(key)) { game.selectSlug(Number(key) - 1); refreshWeapon(); }
     if (key === 'j') openPanel('journal');
@@ -853,22 +961,37 @@ function frame() {
     if (b.life <= 0) { scene.remove(b.points); b.points.geometry.dispose(); b.points.material.dispose(); bursts.splice(i, 1); }
   }
   updateMarkers();
+  updatePlayerAvatar();
   lastUI += dt; if (lastUI > 0.1) { game.state.audio = audio.getStatus(); ui.update(game.state); drawMinimap(); lastUI = 0; }
   audio.update(dt);
   game.state.settings.quality === 'low' ? renderer.render(scene, camera) : composer.render();
 }
 applyAtmosphere();
 ui.setMode('menu'); ui.update(game.state); frame();
+requestAnimationFrame(() => {
+  prepareImportedModels().then(() => {
+    registerImportedModels({ slug: applyImportedSlug, blaster: createImportedBlaster });
+    rebuildPets(); blaster.refreshImported();
+    refreshPlayerAvatar();
+    if (addImportedGuide(world)) {
+      world.collisionWorld.dispose(); world.collisionWorld = createSceneCollision(world.group);
+      rebuildMarkers(); updateInteractions();
+    }
+  }).catch(error => console.warn('Uploaded model preparation:', error.message));
+});
 
 // Development-only hooks let integration tests exercise real collision and rendering.
 if (import.meta.env.DEV) {
   window.__SLUGTERRA__ = {
     game, player, enemies, camera, renderer, character, projectiles, combatStats, audio, launcher, blaster, mouse, colliders,
     get world() { return world; },
+    get viewMode() { return view.mode; },
+    get playerAvatar() { return playerAvatar; },
     get aiming() { return aiming; },
     get yaw() { return yaw; },
     get mode() { return mode; },
     get projectileCount() { return projectiles.length; },
+    get importedModels() { return getImportedModelStatus(); },
     teleport(x, z) { player.set(x, world.groundHeight(x, z) + 1.85, z); character.reset(); camera.position.copy(player); updateInteractions(); },
     lookAt(x, y, z) { camera.lookAt(x, y, z); const e = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ'); yaw = e.y; pitch = e.x; },
     shoot, interact, loadCavern, useSkill,

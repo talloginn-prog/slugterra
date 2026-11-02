@@ -1,4 +1,5 @@
-/** Original procedural companion and blaster artwork. Faces point along local -Z. */
+import { applyImportedSlug, createImportedBlaster } from './model-registry.js';
+/** Procedural fallbacks and uploaded artwork. Faces point along local -Z. */
 function helpers(THREE) {
   const group = new THREE.Group();
   const materials = new Map();
@@ -238,6 +239,8 @@ function createAdditionalSlugModel(THREE, slug, kind, { scale, morphed }) {
 }
 
 export function createSlugModel(THREE, slug, { scale = 1, morphed = false } = {}) {
+  const imported = applyImportedSlug(THREE, slug, { scale, morphed });
+  if (imported) return imported;
   const kind = kindOf(slug);
   if (!['fire', 'electric', 'water'].includes(kind)) return createAdditionalSlugModel(THREE, slug, kind, { scale, morphed });
   const b = helpers(THREE), { group, material, egg, tube, shape, curveShape } = b;
@@ -443,10 +446,14 @@ export function createBlasterModel(THREE, slugs = []) {
   }
   let companion = null, selected = -1, selectedIdentity = null, time = 0;
   const equipment = new THREE.Group(); equipment.name = 'Equipment tuning'; group.add(equipment);
-  let weaponIdentity = null;
+  let weaponIdentity = null, lastWeaponSpec = null, uploadedWeapon = null;
   function disposeMeshes(root) {
-    const geometries = new Set(), materials = new Set();
-    root.traverse(o => { if (o.isMesh) { geometries.add(o.geometry); for (const m of (Array.isArray(o.material) ? o.material : [o.material])) materials.add(m); } });
+    const geometries = new Set(), materials = new Set(), skeletons = new Set();
+    root.traverse(o => {
+      if (o.isSkinnedMesh && o.skeleton) skeletons.add(o.skeleton);
+      if (o.isMesh && !o.userData.importedSharedResources) { geometries.add(o.geometry); for (const m of (Array.isArray(o.material) ? o.material : [o.material])) materials.add(m); }
+    });
+    skeletons.forEach(s => s.dispose());
     geometries.forEach(g => g.dispose()); materials.forEach(m => m.dispose());
   }
   function setSlug(index) {
@@ -469,6 +476,7 @@ export function createBlasterModel(THREE, slugs = []) {
   }
   function setWeapon(spec = null) {
     const value = typeof spec === 'string' ? { id: spec } : spec || {};
+    lastWeaponSpec = value;
     const identity = JSON.stringify([value.id, value.name, value.tier, value.accent, value.color, value.shellColor, value.metalness, value.roughness]);
     if (identity === weaponIdentity) return;
     weaponIdentity = identity;
@@ -500,11 +508,20 @@ export function createBlasterModel(THREE, slugs = []) {
     }
     group.name = value.name ? `${value.name} slug blaster` : 'Ranger slug blaster';
     group.userData.weaponId = id; group.userData.weaponTier = tier;
+    if (uploadedWeapon) { group.remove(uploadedWeapon); uploadedWeapon = null; }
+    uploadedWeapon = createImportedBlaster(THREE, value);
+    for (const child of group.children) child.visible = !uploadedWeapon || child === carousel;
+    if (uploadedWeapon) { group.add(uploadedWeapon); group.userData.importedWeapon = true; }
+    else group.userData.importedWeapon = false;
+  }
+  function refreshImported() {
+    selectedIdentity = null; setSlug(selected);
+    weaponIdentity = null; setWeapon(lastWeaponSpec);
   }
   setSlug(0);
   const muzzle=new THREE.Vector3(0,.055,-.553);
   return {
-    group,muzzle,setSlug,setRoster,setWeapon,
+    group,muzzle,setSlug,setRoster,setWeapon,refreshImported,
     update(dt,{recoil=0,aiming=false,cooldown=0}={}){
       time+=Math.min(.1,Math.max(0,Number(dt)||0));
       // A little chamber indexing and charging glow show the action inside the housing.

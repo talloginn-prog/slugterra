@@ -31,7 +31,13 @@ function verifyEmbeddedAssets() {
   }
   const mp3 = fs.readFileSync(path.join(root, 'src/assets/audio/slugterra-metamorphosis-shot.mp3'));
   assert.ok(html.includes(mp3.toString('base64')), 'supplied metamorphosis MP3 must be embedded byte-for-byte');
-  console.log(`PASS: all ${imageNames.length} runtime reference images and the supplied MP3 are embedded unchanged`);
+  const models = fs.readdirSync(path.join(root, 'src/assets/models/runtime')).filter(name => name.endsWith('.glb'));
+  assert.equal(models.length, 7);
+  for (const name of models) {
+    const source = fs.readFileSync(path.join(root, 'src/assets/models/runtime', name));
+    assert.ok(html.includes(source.toString('base64')), `${name} must be embedded byte-for-byte in the portable HTML`);
+  }
+  console.log(`PASS: all ${imageNames.length} runtime reference images, seven runtime models and the supplied MP3 are embedded unchanged`);
 }
 
 async function imagesDecoded(page, selector, expected) {
@@ -110,6 +116,10 @@ async function main() {
     if (await page.locator('#confirm-restart').isVisible()) await page.locator('#confirm-restart').click();
     await page.waitForFunction(() => document.body.dataset.mode === 'playing', undefined, { timeout });
     assert.equal(await page.locator('#loadout button').count(), 3);
+    await page.keyboard.press('p');
+    await page.waitForFunction(() => document.querySelector('#view-toggle').getAttribute('aria-label').includes('first-person'), undefined, { timeout });
+    await page.keyboard.press('p');
+    await page.waitForFunction(() => document.querySelector('#view-toggle').getAttribute('aria-label').includes('third-person'), undefined, { timeout });
     console.log('PASS: offline portable production game boots WebGL and enters play without development hooks');
 
     await page.keyboard.press('i');

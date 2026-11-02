@@ -68,6 +68,7 @@ origin; moving the file or changing the server address may use a different save.
 CONTROLS
 WASD/arrows move; Shift sprint; Space jump; mouse look.
 Left click/F fires. Hold right click to aim; C toggles focus.
+P switches between first-person and third-person view.
 Right-click aim and left-click fire can be pressed in either order.
 Without pointer lock, right-drag turns without firing; left-drag also turns.
 E speaks/rests/collects/travels; 1/2/3 select your three equipped companions.

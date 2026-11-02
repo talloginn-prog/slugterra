@@ -67,29 +67,29 @@ export function createCavern(THREE, { id = 'luminous', quality = 'high' } = {}) 
   if (rockTexture) { stone.map = rockTexture; stone.bumpMap = rockTexture; stone.bumpScale = 0.22; darkStone.map = rockTexture; darkStone.bumpMap = rockTexture; darkStone.bumpScale = 0.28; }
   if (barkTexture) { bark.map = barkTexture; bark.bumpMap = barkTexture; bark.bumpScale = 0.3; }
 
-  function mesh(geometry, mat, x = 0, y = 0, z = 0, parent = group) {
+  function mesh(geometry, mat, x = 0, y = 0, z = 0, parent = group, solid = !mat.transparent && geometry.type !== 'PlaneGeometry') {
     const object = new THREE.Mesh(geometry, mat); object.position.set(x, y, z);
-    object.receiveShadow = true; parent.add(object); return object;
+    object.userData.collisionSolid = solid; object.receiveShadow = true; parent.add(object); return object;
   }
-  function staticMesh(geometry, mat, x = 0, y = 0, z = 0, scale = null, rotation = null) {
+  function staticMesh(geometry, mat, x = 0, y = 0, z = 0, scale = null, rotation = null, solid = !mat.transparent) {
     if (geometry.index) { const nonIndexed = geometry.toNonIndexed(); geometry.dispose(); geometry = nonIndexed; }
     dummy.position.set(x, y, z); dummy.scale.set(scale?.x ?? 1, scale?.y ?? 1, scale?.z ?? 1); dummy.rotation.set(rotation?.x || 0, rotation?.y || 0, rotation?.z || 0); dummy.updateMatrix();
     geometry.applyMatrix4(dummy.matrix);
-    if (!staticGroups.has(mat)) staticGroups.set(mat, []);
-    staticGroups.get(mat).push(geometry);
+    if (!staticGroups.has(mat)) staticGroups.set(mat, { solid: [], decorative: [] });
+    staticGroups.get(mat)[solid ? 'solid' : 'decorative'].push(geometry);
   }
-  function batch(geometry, mat, values) {
+  function batch(geometry, mat, values, solid = !mat.transparent && mat !== leaf) {
     if (!values.length) { geometry.dispose(); return null; }
     const object = new THREE.InstancedMesh(geometry, mat, values.length);
     values.forEach((v, index) => {
       dummy.position.set(v.x, v.y, v.z); dummy.scale.set(v.sx ?? 1, v.sy ?? 1, v.sz ?? 1); dummy.rotation.set(v.rx || 0, v.ry || 0, v.rz || 0); dummy.updateMatrix(); object.setMatrixAt(index, dummy.matrix);
       if (v.color !== undefined) object.setColorAt(index, color(v.color));
     });
-    object.instanceMatrix.needsUpdate = true; object.receiveShadow = true; group.add(object); return object;
+    object.userData.collisionSolid = solid; object.instanceMatrix.needsUpdate = true; object.receiveShadow = true; group.add(object); return object;
   }
   function tube(points, radius, mat, segments = 20) {
     const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(...p)));
-    staticMesh(new THREE.TubeGeometry(curve, segments, radius, 7, false), mat);
+    staticMesh(new THREE.TubeGeometry(curve, segments, radius, 7, false), mat, 0, 0, 0, null, null, radius >= 0.2);
   }
   function obstacle(x, z, radius, height, bottom = groundHeight(x, z)) { colliders.push({ x, z, radius, bottom, top: bottom + height }); }
 
@@ -205,7 +205,7 @@ export function createCavern(THREE, { id = 'luminous', quality = 'high' } = {}) 
     const gillMaterial = material(0xffffff, 0x1d7b82, 0.52, { map: gillTexture, emissiveMap: gillTexture, bumpMap: gillTexture, bumpScale: 0.09, side: THREE.DoubleSide });
     batch(new THREE.SphereGeometry(1, quality === 'low' ? 18 : 26, quality === 'low' ? 6 : 9, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), gillMaterial, undercaps);
     batch(new THREE.TorusGeometry(1, 0.055, 5, 32), material(0xa04f55, 0x5b2435, 0.25), redRims);
-    batch(new THREE.SphereGeometry(1, 6, 4), material(0x87dfcf, 0x2da39a, 0.7), spots);
+    batch(new THREE.SphereGeometry(1, 6, 4), material(0x87dfcf, 0x2da39a, 0.7), spots, false);
     // Smaller shelf fungi and root arches establish detail at walking height.
     const shelves = [], shelfStems = [];
     for (let i = 0; i < Math.floor(200 * detail); i++) {
@@ -224,7 +224,7 @@ export function createCavern(THREE, { id = 'luminous', quality = 'high' } = {}) 
       tube([[x, y, z], [x + 0.6, y - length * 0.5, z + 0.4], [x - 0.4, y - length, z + 0.1]], 0.047, bark, 9);
       for (let j = 0; j < 6; j++) pendants.push({ x: x + Math.sin(j * 0.8) * 0.4, y: y - length * j / 6, z: z + 0.3, sx: 0.1, sy: 0.23, sz: 0.1, color: i % 4 ? 0x62d6c3 : 0xd18dc1 });
     }
-    batch(new THREE.SphereGeometry(1, 7, 5), material(0xffffff, 0x449b9f, 1.25), pendants);
+    batch(new THREE.SphereGeometry(1, 7, 5), material(0xffffff, 0x449b9f, 1.25), pendants, false);
   }
 
   if (!legacy && !forest) {
@@ -330,7 +330,7 @@ export function createCavern(THREE, { id = 'luminous', quality = 'high' } = {}) 
   }
   function gate(target, x, z, name) {
     const y = platform(x, z, 2.7);
-    const node = new THREE.Group(); node.position.set(x, y, z); group.add(node);
+    const node = new THREE.Group(); node.name = `Passage gate to ${target}`; node.position.set(x, y, z); group.add(node);
     mesh(new THREE.TorusGeometry(2.15, 0.29, 8, 40, Math.PI * 1.73), metal, 0, 2.4, 0, node).rotation.z = -Math.PI * 0.365;
     const inner = mesh(new THREE.TorusGeometry(1.94, 0.055, 5, 48, Math.PI * 1.73), cyan, 0, 2.4, -0.24, node); inner.rotation.z = -Math.PI * 0.365;
     for (const side of [-1, 1]) { staticMesh(new THREE.BoxGeometry(0.48, 2.7, 0.7), metal, x + side * 1.75, y + 1.3, z); obstacle(x + side * 1.75, z, 0.26, 2.7); }
@@ -342,7 +342,7 @@ export function createCavern(THREE, { id = 'luminous', quality = 'high' } = {}) 
   function checkpoint(x, z) {
     const y = platform(x, z, 1.7);
     staticMesh(new THREE.CylinderGeometry(0.28, 0.42, 2.5, 8), metal, x, y + 1.25, z);
-    const beacon = mesh(new THREE.OctahedronGeometry(0.44, 0), amber, x, y + 2.9, z); animated.push(time => { beacon.rotation.y = time * 0.4; });
+    const beacon = mesh(new THREE.OctahedronGeometry(0.44, 0), amber, x, y + 2.9, z); beacon.userData.collisionSolid = false; animated.push(time => { beacon.rotation.y = time * 0.4; });
     const light = new THREE.PointLight(0xffba72, 6, 12, 2); light.position.set(x, y + 2.8, z); group.add(light);
     obstacle(x, z, 0.38, 2.5);
     interactables.push({ id: `checkpoint-${id}`, type: 'checkpoint', name: 'Expedition checkpoint', position: local(x, z), color: 0xffc781, description: 'Rest, restore vitality and record your return point.' });
@@ -381,7 +381,7 @@ export function createCavern(THREE, { id = 'luminous', quality = 'high' } = {}) 
     const pedestal = mesh(new THREE.CylinderGeometry(0.7, 1.1, 0.9, 8), darkStone, x, y + 0.48, z);
     const slug = createSlugModel(THREE, SLUG_CATALOG[slugId], { scale: 0.85 }); slug.position.set(x, y + 1.1, z); group.add(slug);
     const beam = mesh(new THREE.CylinderGeometry(0.035, 0.18, 5, 9, 1, true), new THREE.MeshBasicMaterial({ color: SLUG_CATALOG[slugId].color, transparent: true, opacity: 0.12, depthWrite: false, side: THREE.DoubleSide }), x, y + 3.1, z);
-    const display = new THREE.Group(); display.name = `Companion discovery ${slugId}`; group.add(display); display.add(slug, pedestal, beam);
+    const display = new THREE.Group(); display.name = `Companion discovery ${slugId}`; group.add(display); display.add(slug, beam);
     const record = { id: `discovery-${slugId}`, type: 'discovery', slugId, name, position: local(x, z), color: color(SLUG_CATALOG[slugId].color).getHex(), object: display, beam, description: `Approach gently and invite this ${SLUG_CATALOG[slugId].species} to your collection.` };
     animated.push(time => { slug.position.y = y + 1.12 + Math.sin(time * 2.3) * 0.08; slug.rotation.y = Math.sin(time * 0.7) * 0.32; });
     interactables.push(record); obstacle(x, z, 0.75, 0.8);
@@ -389,7 +389,7 @@ export function createCavern(THREE, { id = 'luminous', quality = 'high' } = {}) 
   function survey(x, z, name) {
     const y = platform(x, z, 2.4, stone);
     staticMesh(new THREE.BoxGeometry(1.2, 0.8, 0.7), metal, x, y + 0.65, z);
-    const core = mesh(new THREE.OctahedronGeometry(0.42), cyan, x, y + 1.9, z); animated.push(time => { core.rotation.y = time * 0.5; core.position.y = y + 1.9 + Math.sin(time) * 0.12; });
+    const core = mesh(new THREE.OctahedronGeometry(0.42), cyan, x, y + 1.9, z); core.userData.collisionSolid = false; animated.push(time => { core.rotation.y = time * 0.5; core.position.y = y + 1.9 + Math.sin(time) * 0.12; });
     interactables.push({ id: `survey-${id}`, type: 'survey', name, position: local(x, z), color: 0x80ded7, description: 'Record this expedition survey. Its route and task are original game content.' });
   }
 
@@ -491,11 +491,17 @@ export function createCavern(THREE, { id = 'luminous', quality = 'high' } = {}) 
 
   // Merge static ornaments by material after transforms. Dense silhouettes and
   // architecture stay inexpensive rather than becoming one draw call per twig.
-  for (const [mat, geometries] of staticGroups) {
-    if (!geometries.length) continue;
-    const merged = mergeGeometries(geometries, false);
-    geometries.forEach(g => g.dispose());
-    if (merged) { const object = mesh(merged, mat); object.castShadow = mat === bark || mat === stone || mat === metal; }
+  for (const [mat, sections] of staticGroups) {
+    for (const [kind, geometries] of Object.entries(sections)) {
+      if (!geometries.length) continue;
+      const merged = mergeGeometries(geometries, false);
+      geometries.forEach(g => g.dispose());
+      if (merged) {
+        const object = mesh(merged, mat, 0, 0, 0, group, kind === 'solid');
+        object.name = kind === 'solid' ? 'Solid cavern structure' : 'Decorative cavern detail';
+        object.castShadow = mat === bark || mat === stone || mat === metal;
+      }
+    }
   }
   const atmosphere = legacy
     ? { background: 0x102832, fog: 0x102e36, density: 0.0075, key: 0xf5dfbb, fill: 0x69cfff, exposure: 1.15 }
@@ -504,7 +510,7 @@ export function createCavern(THREE, { id = 'luminous', quality = 'high' } = {}) 
   const river = Array.from({ length: 69 }, (_, i) => { const z = -102 + i * 3; return { x: legacy ? -7 + Math.sin(z * 0.035) * 13 : riverX(z), z }; });
   return {
     id, quality, group, groundHeight, spawn: original?.spawn || { x: 0, z: 28 }, bounds: original?.bounds || 88,
-    landmarks, colliders, interactables, enemySpawns, atmosphere,
+    landmarks, colliders, interactables, enemySpawns, atmosphere, collisionReady: true,
     map: { kind: legacy ? 'luminous' : forest ? 'forest' : 'terraces', river, paths: legacy ? [] : [routePoints.map(([x, z]) => ({ x, z }))] },
     update(time, dt, player) {
       original?.update(time, dt);

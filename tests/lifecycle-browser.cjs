@@ -32,6 +32,7 @@ async function main() {
     page.on('console', msg => { if (msg.type() === 'error') errors.push(msg.text()); });
     await page.goto(baseURL, { waitUntil: 'networkidle' });
     await page.waitForFunction(() => !!window.__SLUGTERRA__);
+    await page.waitForFunction(() => window.__SLUGTERRA__.importedModels.ready === 7);
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
     await page.locator('#setting-quality').selectOption('low');
     await page.locator('#setting-sound').uncheck();
@@ -56,7 +57,25 @@ async function main() {
       enemy.hp = 63;
       const projectile = g.projectiles.find(p => !p.hostile);
       if (!projectile) throw new Error('Expected the launched companion to remain in flight');
-      window.__lifecycle = { enemy, brain: enemy.brain, projectile, world: g.world, audio: g.audio, disposed: 0, instances: 0 };
+      const guide = g.world.importedGuide;
+      if (!guide) throw new Error('Expected the uploaded Eli contact');
+      const skeletons = new Set(), sharedGeometry = new Set(), sharedMaterials = new Set();
+      guide.traverse(object => {
+        if (object.isSkinnedMesh) skeletons.add(object.skeleton);
+        if (object.isMesh) {
+          sharedGeometry.add(object.geometry);
+          for (const material of (Array.isArray(object.material) ? object.material : [object.material])) sharedMaterials.add(material);
+        }
+      });
+      window.__lifecycle = { enemy, brain: enemy.brain, projectile, world: g.world, audio: g.audio, disposed: 0, instances: 0,
+        skeletons, sharedGeometry, disposedBoneTextures: 0, disposedSharedResources: 0 };
+      for (const skeleton of skeletons) {
+        // A contact outside the camera frustum might not yet have rendered.
+        // Allocate its owned texture so cleanup is checked in either case.
+        if (!skeleton.boneTexture) skeleton.computeBoneTexture();
+        skeleton.boneTexture.addEventListener('dispose', () => { window.__lifecycle.disposedBoneTextures++; });
+      }
+      for (const resource of [...sharedGeometry, ...sharedMaterials]) resource.addEventListener('dispose', () => { window.__lifecycle.disposedSharedResources++; });
       g.world.group.traverse(object => {
         if (object.isInstancedMesh) {
           window.__lifecycle.instances++;
@@ -68,12 +87,16 @@ async function main() {
         projectileLife: projectile.life, projectilePosition: projectile.mesh.position.toArray(),
         playerPosition: g.player.toArray(), savedPosition: { ...g.game.state.position },
         instances: window.__lifecycle.instances,
+        skeletons: skeletons.size,
       };
     });
     assert.ok(before.instances > 0, 'The departing scenery contains instanced GPU buffers');
+    assert.ok(before.skeletons > 0, 'The uploaded Eli has independently owned skin resources');
     await page.locator('#setting-quality').selectOption('medium');
     const after = await page.evaluate(() => {
       const g = window.__SLUGTERRA__, prior = window.__lifecycle;
+      const nextGeometry = new Set();
+      g.world.importedGuide.traverse(object => { if (object.isMesh) nextGeometry.add(object.geometry); });
       return {
         newWorld: g.world !== prior.world, sameEnemy: g.enemies.includes(prior.enemy),
         sameBrain: prior.enemy.brain === prior.brain, hp: prior.enemy.hp,
@@ -83,6 +106,10 @@ async function main() {
         inFlight: g.game.state.slugs.find(s => s.id === prior.projectile.slug.id).inFlight,
         playerPosition: g.player.toArray(), savedPosition: { ...g.game.state.position },
         sameAudio: g.audio === prior.audio, disposed: prior.disposed,
+        disposedBoneTextures: prior.disposedBoneTextures,
+        oldBoneTexturesCleared: [...prior.skeletons].every(skeleton => skeleton.boneTexture === null),
+        disposedSharedResources: prior.disposedSharedResources,
+        sameImportedGeometry: nextGeometry.size === prior.sharedGeometry.size && [...nextGeometry].every(geometry => prior.sharedGeometry.has(geometry)),
       };
     });
     assert.equal(after.newWorld, true);
@@ -99,10 +126,14 @@ async function main() {
     assert.deepEqual(after.savedPosition, before.savedPosition);
     assert.equal(after.sameAudio, true);
     assert.equal(after.disposed, before.instances, 'Every old InstancedMesh releases its matrix/color buffers');
+    assert.equal(after.disposedBoneTextures, before.skeletons, 'Every old Eli skeleton releases its owned bone texture');
+    assert.equal(after.oldBoneTexturesCleared, true);
+    assert.equal(after.disposedSharedResources, 0, 'Scene cleanup must retain imported cache geometry and materials');
+    assert.equal(after.sameImportedGeometry, true, 'Replacement Eli reuses the still-valid imported geometry cache');
     await page.locator('#setting-quality').selectOption('low');
     await page.getByRole('button', { name: 'Close dialog' }).click();
     await page.waitForFunction(() => window.__SLUGTERRA__.game.state.slugs.every(s => !s.inFlight), undefined, { timeout });
-    console.log('PASS: quality changes preserve damaged enemy/brain, active projectile, position, saves and audio; instance buffers disposed');
+    console.log('PASS: quality changes preserve combat, position, saves and audio; instance buffers and owned Eli bone textures disposed while shared imported resources survive');
 
     const instances = await page.evaluate(() => {
       const g = window.__SLUGTERRA__;

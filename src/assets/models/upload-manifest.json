@@ -1,0 +1,72 @@
+[
+  {
+    "archive": "slugterra-blaster-gun.zip",
+    "bytes": 3652217,
+    "sha256": "9fb854afdf8de397340bd279f754e108727e5db83f0faec7e73e9bf1e7f67129",
+    "repositoryPath": "src/assets/models/originals/slugterra-blaster-gun.zip",
+    "licenseSupplied": false
+  },
+  {
+    "archive": "slugterra_blaster_gun.zip",
+    "bytes": 1170293,
+    "sha256": "9ceca0c94571ecc662484c842cc251266e3dd15a3bc81a7e1bc7d7e38cc90f49",
+    "repositoryPath": "src/assets/models/originals/slugterra_blaster_gun.zip",
+    "licenseSupplied": true
+  },
+  {
+    "archive": "renegade_ultra_qlc_blaster_slugterra.zip",
+    "bytes": 1182300,
+    "sha256": "3214fe281ed8d4a6b4352df39276f1e4766b7aa5fc4bc8cd0c779ce130f4040b",
+    "repositoryPath": "src/assets/models/originals/renegade_ultra_qlc_blaster_slugterra.zip",
+    "licenseSupplied": true
+  },
+  {
+    "archive": "cute_alien_slugterra_joules.zip",
+    "bytes": 2818048,
+    "sha256": "72e7deb1f2d6cd8e0532e3a44ec57db969f739f90f48d5d48865d37b26b0dc2d",
+    "repositoryPath": "src/assets/models/originals/cute_alien_slugterra_joules.zip",
+    "licenseSupplied": true
+  },
+  {
+    "archive": "slugterra_burpy.zip",
+    "bytes": 716893,
+    "sha256": "406d8b4893cf4b91f971c4f781fa1e28d99361fc2b4601a7c299cacf8587a8b7",
+    "repositoryPath": "src/assets/models/originals/slugterra_burpy.zip",
+    "licenseSupplied": true
+  },
+  {
+    "archive": "slugterra_blaster_x-duty_takedown.zip",
+    "bytes": 1026625,
+    "sha256": "9fb34d2da624c2968702a89e535baf3688f20020921d98f4b378b3613a5309b9",
+    "repositoryPath": "src/assets/models/originals/slugterra_blaster_x-duty_takedown.zip",
+    "licenseSupplied": true
+  },
+  {
+    "archive": "cute-alien-slugterra-joules.zip",
+    "bytes": 2024125,
+    "sha256": "1e62c6bd0150726096d4ef8c73db12ebce20ad8707018c2a797727305e6d6b2d",
+    "repositoryPath": "src/assets/models/originals/cute-alien-slugterra-joules.zip",
+    "licenseSupplied": false
+  },
+  {
+    "archive": "eli.zip",
+    "bytes": 32704109,
+    "sha256": "a01239104358aeb16ef654499f84870a6900d8dfde8f110b060042cdb54a5dc2",
+    "repositoryPath": "src/assets/models/originals/eli.zip",
+    "licenseSupplied": false
+  },
+  {
+    "archive": "slugterra-burpy.zip",
+    "bytes": 633527,
+    "sha256": "fad0ab87052e9bfa8a3a08beb86a2d184ca1fa04a8b095587d79e2ae578508da",
+    "repositoryPath": "src/assets/models/originals/slugterra-burpy.zip",
+    "licenseSupplied": false
+  },
+  {
+    "archive": "slug_shell.zip",
+    "bytes": 38420,
+    "sha256": "f8e812ee632db008ef082f5d5c8522a31daa35de2eeee0c4348aba3bc2e91ef6",
+    "repositoryPath": "src/assets/models/originals/slug_shell.zip",
+    "licenseSupplied": true
+  }
+]

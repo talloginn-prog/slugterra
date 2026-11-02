@@ -129,7 +129,7 @@ async function main() {
               g.lookAt(enemy.root.position.x,enemy.root.position.y,enemy.root.position.z);
               g.launcher.updateWorldMatrix(true,false);
               const start=g.launcher.localToWorld(g.blaster.muzzle.clone()),end=enemy.root.position;
-              const blocked=physics.firstTerrainHit(start,end,g.world.groundHeight,.12)!==null || g.colliders.some(c=>physics.segmentCapsuleHit(start,end,{x:c.x,y:(c.bottom+c.top)/2,z:c.z},c.radius+.12,(c.top-c.bottom)/2)!==null);
+              const blocked=physics.firstTerrainHit(start,end,g.world.groundHeight,.12)!==null || (g.world.collisionReady ? g.world.collisionWorld.segmentHit(start,end)!==null : g.colliders.some(c=>physics.segmentCapsuleHit(start,end,{x:c.x,y:(c.bottom+c.top)/2,z:c.z},c.radius+.12,(c.top-c.bottom)/2)!==null));
               if(!blocked) {clear=true;break;}
             }
             if(!clear) throw new Error('No clear firing lane to sentinel');

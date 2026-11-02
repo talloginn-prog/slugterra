@@ -50,12 +50,12 @@ export function createWorld(THREE) {
   const mossTexture=surfaceTexture('moss'),barkTexture=surfaceTexture('bark'),capTexture=surfaceTexture('cap');
   const stoneMat=mat(0x234948), barkMat=mat(0x254947), bronzeMat=mat(0x785b3e), glowCyan=mat(0x65e0d9,0x2ae8cd,1.4);
   if(barkTexture){barkMat.map=barkTexture;barkMat.bumpMap=barkTexture;barkMat.bumpScale=.17;}
-  const mesh=(geo,material,x=0,y=0,z=0) => { const o=new THREE.Mesh(geo,material);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;group.add(o);return o;};
+  const mesh=(geo,material,x=0,y=0,z=0,solid=!material.transparent) => { const o=new THREE.Mesh(geo,material);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;o.userData.collisionSolid=solid;group.add(o);return o;};
   const dummy=new THREE.Object3D();
-  const instanced=(geo, material, values) => {
+  const instanced=(geo, material, values, solid=!material.transparent) => {
     const batch=new THREE.InstancedMesh(geo,material,values.length);
     values.forEach((v,i)=>{dummy.position.set(v.x,v.y,v.z);dummy.rotation.set(v.rx||0,v.ry||0,v.rz||0);dummy.scale.set(v.sx??1,v.sy??1,v.sz??1);dummy.updateMatrix();batch.setMatrixAt(i,dummy.matrix);if(v.color!==undefined)batch.setColorAt(i,new THREE.Color(v.color));});
-    batch.castShadow=false;batch.receiveShadow=true;batch.instanceMatrix.needsUpdate=true;group.add(batch);return batch;
+    batch.userData.collisionSolid=solid;batch.castShadow=false;batch.receiveShadow=true;batch.instanceMatrix.needsUpdate=true;group.add(batch);return batch;
   };
   const terrain=new THREE.PlaneGeometry(208,208,160,160);terrain.rotateX(-Math.PI/2);
   const positions=terrain.attributes.position, colors=[];
@@ -68,14 +68,14 @@ export function createWorld(THREE) {
     col.multiplyScalar(.82+noise*.3);colors.push(col.r,col.g,col.b);
   }
   terrain.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));terrain.computeVertexNormals();
-  const floor=mesh(terrain,new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,map:mossTexture,bumpMap:mossTexture,bumpScale:.24}));floor.name='Living cavern floor';
+  const floor=mesh(terrain,new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,map:mossTexture,bumpMap:mossTexture,bumpScale:.24}));floor.name='Living cavern floor';floor.userData.collisionSolid=false;
   // A winding luminous stream, with an undulating reflective skin.
   const waterGeo=new THREE.PlaneGeometry(5.4,188,5,120);waterGeo.rotateX(-Math.PI/2);
   const wp=waterGeo.attributes.position;
   for(let i=0;i<wp.count;i++){const z=wp.getZ(i);wp.setX(i,wp.getX(i)+riverX(z));wp.setY(i,.2);}
   waterGeo.computeVertexNormals();
   const waterMaterial=new THREE.MeshStandardMaterial({color:0x147a85,emissive:0x0d788d,emissiveIntensity:.48,metalness:.65,roughness:.2,transparent:true,opacity:.88,side:THREE.DoubleSide});
-  const water=mesh(waterGeo,waterMaterial);water.castShadow=false;
+  const water=mesh(waterGeo,waterMaterial);water.castShadow=false;water.userData.collisionSolid=false;
   const rippleGeo=new THREE.RingGeometry(.8,1,28);rippleGeo.rotateX(-Math.PI/2);
   const ripples=[];
   for(let i=0;i<18;i++){const z=range(-85,82),r=range(.3,1);ripples.push({x:riverX(z)+range(-1.8,1.8),y:.24,z,sx:r,sy:1,sz:r*.48});}
@@ -105,7 +105,7 @@ export function createWorld(THREE) {
     const path=Math.abs(x-(7*Math.sin((z+20)*.041)+8));if(path<2.8&&rand()<.9)continue;
     const s=range(.28,.95);grass.push({x,y:groundHeight(x,z)-.03,z,sx:s,sy:s*range(.7,1.4),sz:s,ry:range(0,6.28),color:leafColors[Math.floor(rand()*leafColors.length)]});
   }
-  instanced(bladeGeo,foliageMat,grass);
+  instanced(bladeGeo,foliageMat,grass,false);
   // Ferns with luminous serrated fronds, concentrated on the banks and groves.
   const fernGeo=new THREE.BufferGeometry();const fp=[],fi=[];
   for(let f=0;f<7;f++){
@@ -120,7 +120,7 @@ export function createWorld(THREE) {
   fernGeo.setAttribute('position',new THREE.Float32BufferAttribute(fp,3));fernGeo.setIndex(fi);fernGeo.computeVertexNormals();
   const ferns=[];
   for(let i=0;i<270;i++){const x=range(-76,76),z=range(-70,80);if(Math.abs(x-riverX(z))<4)continue;const s=range(.6,1.6);ferns.push({x,y:groundHeight(x,z),z,sx:s,sy:s,sz:s,ry:range(0,6.28),color:rand()<.23?0x9865b6:0x43aa91});}
-  instanced(fernGeo,new THREE.MeshStandardMaterial({color:0xffffff,emissive:0x126b63,emissiveIntensity:.35,roughness:.8,side:THREE.DoubleSide}),ferns);
+  instanced(fernGeo,new THREE.MeshStandardMaterial({color:0xffffff,emissive:0x126b63,emissiveIntensity:.35,roughness:.8,side:THREE.DoubleSide}),ferns,false);
   // The iconic lantern mushrooms. Caps are broad, translucent-looking domes.
   const mushroomPositions=[[-23,34,9,6],[25,14,13,7],[-24,-5,17,8],[36,-28,14,8],[-49,-32,20,10],[14,-61,19,9],[52,42,15,8],[-55,48,17,8],[41,-67,22,10],[-33,-70,19,9],[-62,0,15,8]];
   for(let i=0;i<40;i++)mushroomPositions.push([range(-82,82),range(-80,75),range(3,9),range(2,4.4)]);
@@ -133,10 +133,10 @@ export function createWorld(THREE) {
   const mushroomCapMat=mat(0xffffff,0x16776d,.38);mushroomCapMat.map=capTexture;mushroomCapMat.bumpMap=capTexture;mushroomCapMat.bumpScale=.09;
   instanced(new THREE.SphereGeometry(1,24,12,0,Math.PI*2,0,Math.PI/2),mushroomCapMat,caps);
   instanced(new THREE.SphereGeometry(1,16,8),mat(0xffffff,0x5ed7b9,.9),unders);
-  instanced(new THREE.TorusGeometry(.97,.018,4,40),mat(0xffffff,0x4edacb,1.8),rim);
-  instanced(new THREE.SphereGeometry(1,6,4),mat(0xffffff,0x98ffd8,2),spots);
+  instanced(new THREE.TorusGeometry(.97,.018,4,40),mat(0xffffff,0x4edacb,1.8),rim,false);
+  instanced(new THREE.SphereGeometry(1,6,4),mat(0xffffff,0x98ffd8,2),spots,false);
   // Enormous ancient trunks, root arches and shelf fungi.
-  function tube(points,r,material,segments=28){const c=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p)));return mesh(new THREE.TubeGeometry(c,segments,r,7,false),material);}
+  function tube(points,r,material,segments=28){const c=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p)));return mesh(new THREE.TubeGeometry(c,segments,r,7,false),material,0,0,0,r>=.2);}
   const shelves=[];
   for(const [x,z,h] of [[-41,-23,41],[49,-41,43],[-69,30,38],[30,-85,49],[-30,-89,47]]){
     const y=groundHeight(x,z);
@@ -156,7 +156,7 @@ export function createWorld(THREE) {
     tube(points,.045,mat(0x418b89,0x168a8c,.4),12);
     for(let k=0;k<8;k++)beads.push({x:x+Math.sin(k/2*.8+i)*.6,y:top-k/8*len,z:z+Math.cos(k/2+i)*.4,sx:.13,sy:.26,sz:.13,color:rand()<.3?0x9a86ee:0x3dced5});
   }
-  instanced(new THREE.SphereGeometry(1,6,5),mat(0xffffff,0x3cecf1,1.4),beads);
+  instanced(new THREE.SphereGeometry(1,6,5),mat(0xffffff,0x3cecf1,1.4),beads,false);
   // Six-sided crystals with clean, tall silhouettes.
   const crystalGeo=new THREE.CylinderGeometry(.01,.65,3,5,1);crystalGeo.translate(0,1.5,0);
   const crystals=[];
@@ -175,7 +175,7 @@ export function createWorld(THREE) {
     if(lm.id==='guide')continue;
     mesh(new THREE.CylinderGeometry(3.4,3.9,.5,8),stoneMat,x,y+.05,z);
     const ring=mesh(new THREE.TorusGeometry(2.8,.04,6,64),mat(lm.color,lm.color,1.1),x,y+.33,z);ring.rotation.x=-Math.PI/2;
-    const c=mesh(new THREE.OctahedronGeometry(lm.id==='boss'?2.4:.7,0),new THREE.MeshStandardMaterial({color:lm.color,emissive:lm.color,emissiveIntensity:.75,metalness:.4,roughness:.15}),x,y+(lm.id==='boss'?7:2),z);c.scale.y=lm.id==='boss'?1.7:1.4;lm.object=c;rotating.push({obj:c,base:c.position.y,phase:rand()*6});
+    const c=mesh(new THREE.OctahedronGeometry(lm.id==='boss'?2.4:.7,0),new THREE.MeshStandardMaterial({color:lm.color,emissive:lm.color,emissiveIntensity:.75,metalness:.4,roughness:.15}),x,y+(lm.id==='boss'?7:2),z);c.scale.y=lm.id==='boss'?1.7:1.4;c.userData.collisionSolid=false;lm.object=c;rotating.push({obj:c,base:c.position.y,phase:rand()*6});
     const beam=mesh(new THREE.CylinderGeometry(.08,.25,lm.id==='boss'?27:14,12,1,true),new THREE.MeshBasicMaterial({color:lm.color,transparent:true,opacity:.22,depthWrite:false,side:THREE.DoubleSide}),x,y+(lm.id==='boss'?15:9),z);beam.castShadow=false;
     for(let k=0;k<5;k++){const a=k/5*Math.PI*2;mesh(crystalGeo,mat(0x537b7f,lm.color,.2),x+Math.sin(a)*2.3,y+.3,z+Math.cos(a)*2.3).scale.set(.5,range(.6,1.2),.5);}
     pulses.push(ring);
@@ -208,7 +208,7 @@ export function createWorld(THREE) {
   for(let i=0;i<230;i++){const a=range(0,6.28),r=range(30,110);ceilingPositions.push(Math.sin(a)*r,range(40,70),Math.cos(a)*r);}
   const ceilingGeo=new THREE.BufferGeometry();ceilingGeo.setAttribute('position',new THREE.Float32BufferAttribute(ceilingPositions,3));group.add(new THREE.Points(ceilingGeo,new THREE.PointsMaterial({color:0x77cfce,size:.12,transparent:true,opacity:.45,depthWrite:false})));
   return {
-    group,groundHeight,spawn:{x:0,z:28},landmarks,bounds:95,
+    group,groundHeight,spawn:{x:0,z:28},landmarks,bounds:95,collisionReady:true,
     update(time,dt){
       rotating.forEach(({obj,base,phase})=>{obj.rotation.y=time*.35;obj.rotation.z=Math.sin(time*.4+phase)*.12;obj.position.y=base+Math.sin(time*1.2+phase)*.22;});
       pulses.forEach((o,i)=>{o.material.emissiveIntensity=1+Math.sin(time*1.3+i)*.2;});

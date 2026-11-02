@@ -1,10 +1,10 @@
 # Slugterra: The Luminous Deep
 
-A playable, first-person 3D Slugterra-inspired cavern RPG built with Three.js. Travel between the original Luminous Deep expedition, Dark Spores Cavern, and Pyrite Cavern. Discover companions, equip three slugs, trade for blasters, train guided Slug Fu, and explore distinct underground environments. The complete Haven heartshard quest and Hollow Warden ending remain playable.
+A playable 3D Slugterra-inspired cavern RPG built with Three.js, with first-person and third-person views. Press **P** during play to switch views. Travel between the original Luminous Deep expedition, Dark Spores Cavern, and Pyrite Cavern. Discover companions, equip three slugs, trade for blasters, train guided Slug Fu, and explore distinct underground environments. The complete Haven heartshard quest and Hollow Warden ending remain playable.
 
-The handmade procedural models distinguish each species and its battle form: Infurnus has an orange body, yellow belly, and flame crest; Tazerling has a blue body with yellow lightning features; AquaBeek has a beak and aquatic fins. At speed they unfold into larger, fiercer Velocimorphs. The Eli-inspired blaster combines orange armor, gunmetal housing, a layered silver barrel and rifled bore, mechanical sights, a trigger guard, and a companion visible inside its protected glass cartridge.
+Uploaded Burpy and Joules models now provide their protoforms, three uploaded blasters supply the equipment variants, and Eli appears at Haven and as the third-person player. The existing procedural models remain as loading fallbacks and distinguish the other species and every battle form: Infurnus has an orange body, yellow belly, and flame crest; Tazerling has a blue body with yellow lightning features; AquaBeek has a beak and aquatic fins. At speed they unfold into larger, fiercer Velocimorphs. The Eli-inspired blaster combines orange armor, gunmetal housing, a layered silver barrel and rifled bore, mechanical sights, a trigger guard, and a companion visible inside its protected glass cartridge.
 
-The environments, 3D characters, companions, weapons and effects are procedural. The expanded arsenal and cavern atlas also include actual source-linked Slugterra reference artwork, embedded locally for offline play. See `docs/references/verified-canon-2026-11-01.md` and `docs/references/cavern-reference-board.md` for the research and visual evidence. Audio combines original synthesis with a supplied metamorphosis recording bundled for the original and added slug transformations. The lush atmosphere draws broad inspiration from cinematic exploration games; no Avatar models, textures, music, or other assets are included.
+The environments and effects are procedural, with the supplied 3D models integrated alongside the existing procedural characters, companions and weapons. The expanded arsenal and cavern atlas also include actual source-linked Slugterra reference artwork, embedded locally for offline play. See `docs/references/verified-canon-2026-11-01.md` and `docs/references/cavern-reference-board.md` for the research and visual evidence. Audio combines original synthesis with a supplied metamorphosis recording bundled for the original and added slug transformations. The lush atmosphere draws broad inspiration from cinematic exploration games; no Avatar models, textures, music, or other assets are included.
 
 ## Run locally
 
@@ -23,6 +23,9 @@ npm test              # Game rules, persistence, physics, and mouse-input checks
 npm run test:browser  # Original expedition: input, combat, ending, saves, mobile
 npm run test:campaign # Gates, services, collection, Slug Fu, discoveries and travel saves
 npm run test:lifecycle # Quality changes, travel cleanup and cavern surface audio
+npm run test:collision # Actual solid scenery, platform landings, gates and uploaded assets
+npm run test:camera    # P toggle, third-person combat and obstructed rear camera
+npm run verify:models # Hashes of all ten original ZIPs and seven embedded runtime GLBs
 npm run test:portable # Offline production HTML (run package:game first)
 npm run build         # Build the static application into dist/
 npm run preview       # Serve the production build locally
@@ -43,7 +46,7 @@ The game requires no backend, account, external asset downloads, API keys, or da
 .local/downloads/START-HERE.txt
 ```
 
-The HTML embeds the production JavaScript, styles, and supplied transformation MP3. The ZIP contains that HTML and the startup guide. Extract it and open `Slugterra.html` in a WebGL 2 browser; playing the packaged game needs no Node installation or Internet connection. Python 3 is needed only to create the ZIP. The packaging script uses Python's standard library and requires no additional ZIP dependency.
+The HTML embeds the production JavaScript, styles, reference images, seven runtime models and supplied transformation MP3. The ZIP contains that HTML and the startup guide. Extract it and open `Slugterra.html` in a WebGL 2 browser; playing the packaged game needs no Node installation or Internet connection. Python 3 is needed only to create the ZIP. The packaging script uses Python's standard library and requires no additional ZIP dependency.
 
 If a browser restricts file-URL rendering or storage, serve the extracted folder through a local static web server. Local progress and imported audio belong to a browser origin, so changing the server address or file location may use separate storage. Regenerate the package after source changes; it always packages the latest production build. `node scripts/package-game.mjs` can package an existing `dist/` directly without rebuilding.
 
@@ -58,7 +61,7 @@ Allow roughly **10–20 minutes at an exploratory pace** for the complete quest:
 3. With all three shards recovered, head north to **The Heartstone**. The **Hollow Warden** has awakened. Keep moving, avoid its projectiles, and alternate companions to use their different strengths.
 4. Return to Ranger Kael at Haven to complete the expedition. Continue exploring after the victory screen or start a new expedition from the pause menu.
 
-Use the quest tracker, field journal, map, minimap, landmark labels, and echo scan to find your way. Movement uses a **120 Hz fixed simulation** with acceleration, friction, swept collision checks, sliding around trunks and obstacles, terrain slope handling, and jumping. Smaller decorations are scenic rather than individually collidable. Projectile collision is swept between simulation positions to reduce missed hits at high speed.
+Use the quest tracker, field journal, map, minimap, landmark labels, and echo scan to find your way. Movement uses a **120 Hz fixed simulation** with acceleration, friction, capsule collision against the actual solid scenery, wall sliding, terrain slope handling, and jumping. Rocks, trunks, mushroom structures, tents, ruins, counters and gate frames provide physical surfaces; visible platforms can support the player. Grass, particles, glow effects and small ornaments remain scenic. Projectile collision and enemy line of sight use the same solid geometry. The third-person camera retracts around scenery and terrain to keep it out of walls.
 
 ## Controls
 
@@ -69,6 +72,7 @@ Use the quest tracker, field journal, map, minimap, landmark labels, and echo sc
 | **Left click** / **F** | Fire the selected companion; hold to fire again once it has returned and recovered |
 | **Right click** | Hold to focus your aim; combine with left click to fire while aiming |
 | **C** | Toggle focus without holding a mouse button |
+| **P** | Switch between first-person and third-person view |
 | **Shift** | Sprint |
 | **Space** | Jump |
 | **E** | Speak, rest, or collect a nearby heartshard |
@@ -81,7 +85,7 @@ Use the quest tracker, field journal, map, minimap, landmark labels, and echo sc
 | **I** / **Tab** | Slug arsenal; inspect Protoform and Velocimorph illustrations |
 | **Esc** | Pause, release the cursor, or close a panel |
 
-Right-click aiming and left-click firing work in either press order. If pointer lock is unavailable, **hold right click and drag to turn without firing**; left-drag also turns while firing. These independent controls allow turning, aiming, and shooting together. The header buttons provide sound, settings, arsenal, and journal access. Starting a new expedition requires confirmation because it replaces the saved journey.
+Right-click aiming and left-click firing work in either press order. If pointer lock is unavailable, **hold right click and drag to turn without firing**; left-drag also turns while firing. These independent controls allow turning, aiming, and shooting together. The HUD includes a view-switch button for touch controls. The header buttons provide sound, settings, arsenal, and journal access. Starting a new expedition requires confirmation because it replaces the saved journey.
 
 ## Connected cavern expeditions
 
@@ -132,6 +136,12 @@ Use a browser-supported WAV, MP3, OGG, M4A, FLAC, or other decodable audio file,
 
 Local imports stay on the device in the browser's **IndexedDB** (`slugterra-recorded-audio-v1`); that database holds user overrides only. These local imports are not uploaded, copied into source, or added to the portable ZIP. The supplied default transformation MP3 is a separate source asset embedded in the distribution. If persistent browser storage is unavailable, imports work for the current session. **Remove imported clips** restores the bundled transformation recording and the original synthesized effects for the other slots.
 
+## Supplied 3D models
+
+All **ten original model ZIPs** are retained unchanged under `src/assets/models/originals/`, with size and SHA-256 manifests. Seven self-contained runtime GLBs provide Burpy, Joules, three blasters, Eli and a reusable shell. The shell is prepared as an asset; companion ammunition and return behavior are unchanged. Models load in the background while procedural fallbacks remain playable.
+
+Eli retains the supplied rig, body and clothing; dense hair geometry is reduced for runtime use. The supplied file has no authored animation clips, so the player uses a procedural holding pose and walking motion. Model attribution is available through **How to play → Model credits**. See `docs/model-imports-2026-11-02.md` for source preservation and adaptation details.
+
 ## Saves and performance
 
 Progress and settings use this browser's `localStorage`. The original expedition used **`slugterra.luminous-deep.v1`**, save format **1**. Saves include quest progress, collected shards, level, experience, vitality, shield, position, and settings. The game saves periodically, on major events, when pausing, and when leaving. **Continue your journey** restores an existing save. The expanded campaign saves to **`slugterra.campaign.v2`**, importing compatible version-1 progress while keeping the exact original v1 save available as a recovery copy. A malformed campaign save falls back to a valid legacy save. Collection, equipment, skills, per-cavern progress and checkpoints use the new save. A confirmed new expedition resets game progress; it does not clear imported audio. Clearing browser site data removes local progress and imported audio; neither synchronizes across devices. Browsers that deny local storage can still play but cannot retain progress.
@@ -144,8 +154,12 @@ Open **Settings → Visual quality → Performance** to reduce rendering resolut
 index.html                 Browser entry and game canvas
 src/main.js                Renderer, combat, enemy AI, interactions, effects,
                            minimap, fixed-step simulation and game loop
-src/models.js              Procedural Protoform/Velocimorph species and blaster
-src/physics.js             Character movement, terrain and swept collision
+src/models.js              Species, battle forms, blaster and imported-model fallbacks
+src/imported-models.js     Embedded GLB loading and shared resource cache
+src/model-registry.js      Runtime model factory registration
+src/camera-view.js         First-/third-person view and rear-camera obstruction
+src/physics.js             Character movement, terrain and fixed-step collision
+src/collision.js           Solid-scene capsule, support and segment queries
 src/input.js               Independent mouse buttons and pointer-lock fallback
 src/world.js               Preserved original seeded expedition
 src/caverns.js             Connected cavern environments, routes and interactables
@@ -159,10 +173,12 @@ src/audio.js               Synthesized sound, included recording and local overr
 src/assets/audio/
   slugterra-metamorphosis-shot.mp3
                            Supplied default recording for all transformations
+src/assets/models/         Original ZIPs, runtime GLBs, hashes and attribution
+scripts/model-assets.mjs   Original/archive and embedded-runtime verification
 scripts/package-game.mjs   Self-contained HTML and dependency-free ZIP packaging
 tests/                     Game rules, physics, input, audio and browser checks
 ```
 
 ## Scope
 
-This is a self-contained, browser-playable **vertical slice** with a complete quest loop and original procedural presentation. It now includes three connected explorable cavern regions. The canonical location/creature references inform original playable layouts; it does not reproduce a definitive show world map. It is not a commercial AAA production or an adaptation of Avatar: Frontiers of Pandora. Further regions, cinematic voice acting, full character animation, crafting, mounts, multiplayer, and a long-form campaign remain future development work. The verified pre-change source and supplied MP3 remain at Git branch `backup/slugterra-rpg-development-2026-11-01`, commit `48a720ce10a90731bd4f4b1c2aac0114c6196f22`.
+This is a self-contained, browser-playable **vertical slice** with a complete quest loop, procedural environments and supplied character/equipment models. It now includes three connected explorable cavern regions. The canonical location/creature references inform original playable layouts; it does not reproduce a definitive show world map. It is not a commercial AAA production or an adaptation of Avatar: Frontiers of Pandora. Further regions, cinematic voice acting, full character animation, crafting, mounts, multiplayer, and a long-form campaign remain future development work. The verified pre-change source and supplied MP3 remain at Git branch `backup/slugterra-rpg-development-2026-11-01`, commit `48a720ce10a90731bd4f4b1c2aac0114c6196f22`. The three-cavern build immediately before the physics/model/view changes is retained by tag `backup/pre-physics-2026-11-02`.

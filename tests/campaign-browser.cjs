@@ -48,7 +48,13 @@ async function shootMorph(page, id, expectedAlias) {
   await page.waitForFunction(() => window.__SLUGTERRA__.game.state.slugs.every(slug => !slug.inFlight && slug.cooldown === 0), undefined, { timeout });
   const before = await page.evaluate(() => {
     const g = window.__SLUGTERRA__;
-    g.teleport(3, 28); g.lookAt(3, g.player.y + 50, -45);
+    // The old (3,28) fixture faces a now-solid root only ~1 m from the
+    // muzzle. Test transformation in a clear lane; cover is tested separately.
+    g.teleport(8, 25); g.lookAt(8, g.player.y + 50, -45);
+    g.launcher.updateWorldMatrix(true, false);
+    const start = g.launcher.localToWorld(g.blaster.muzzle.clone());
+    const direction = g.camera.getWorldDirection(g.player.clone());
+    if (g.world.collisionWorld.segmentHit(start, start.clone().addScaledVector(direction, 12)) !== null) throw new Error('Transformation fixture must have a clear acceleration lane');
     return { shots: g.combatStats.shots, morphs: g.combatStats.morphs, aliases: window.__campaignMorphAliases.length };
   });
   await page.keyboard.press('1');

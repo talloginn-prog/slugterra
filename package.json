@@ -13,7 +13,10 @@
     "package:game": "npm run build && node scripts/package-game.mjs",
     "test:campaign": "node tests/campaign-browser.cjs",
     "test:portable": "node tests/portable-smoke.cjs",
-    "test:lifecycle": "node tests/lifecycle-browser.cjs"
+    "test:lifecycle": "node tests/lifecycle-browser.cjs",
+    "test:collision": "node tests/collision-browser.cjs",
+    "test:camera": "node tests/camera-browser.cjs",
+    "verify:models": "node scripts/model-assets.mjs"
   },
   "dependencies": {
     "three": "0.180.0"

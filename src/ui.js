@@ -1,4 +1,5 @@
 import { campaignSlugArt, renderCampaignPanel } from './campaign-ui.js';
+import modelCredits from './assets/models/credits.json';
 import { CAVERNS } from './content.js';
 
 const icons = {
@@ -54,7 +55,7 @@ export function createUI(actions) {
     <header class="topbar">
       <button class="brand" data-panel="help" aria-label="Slugterra game guide"><span class="brand-symbol">${icon('diamond')}</span><span><strong>SLUGTERRA</strong><small>THE LUMINOUS DEEP</small></span></button>
       <nav class="main-nav" aria-label="Game navigation"><button class="nav-link active" data-explore>Explore <span>01</span></button><button class="nav-link" data-panel="inventory">Slug arsenal <span>02</span></button><button class="nav-link" data-panel="journal">Field journal <span>03</span></button><button class="nav-link" data-panel="atlas">Cavern atlas <span>04</span></button></nav>
-      <div class="header-tools"><span class="live-label"><i></i> SINGLE PLAYER</span><button class="icon-button mobile-atlas-button" data-panel="atlas" aria-label="Cavern atlas">${icon('compass')}</button><button class="icon-button" id="sound-toggle" aria-label="Toggle sound">${icon('sound')}</button><button class="icon-button" data-panel="settings" aria-label="Settings">${icon('gear')}</button></div>
+      <div class="header-tools"><span class="live-label"><i></i> SINGLE PLAYER</span><button class="icon-button mobile-atlas-button" data-panel="atlas" aria-label="Cavern atlas">${icon('compass')}</button><button class="icon-button" id="view-toggle" aria-label="Switch to third-person view (P)" title="Switch view (P)">P</button><button class="icon-button" id="sound-toggle" aria-label="Toggle sound">${icon('sound')}</button><button class="icon-button" data-panel="settings" aria-label="Settings">${icon('gear')}</button></div>
     </header>
     <main class="menu-content" id="menu-content">
       <div class="expedition-label"><span class="tiny-cross">+</span> A SLUGSLINGER'S JOURNEY <span class="label-line"></span></div>
@@ -91,6 +92,7 @@ export function createUI(actions) {
   $('#begin-button').onclick = () => currentState.hasSave ? actions.openPanel('restart') : actions.start();
   $('#continue-button').onclick = () => actions.start();
   $('#sound-toggle').onclick = () => actions.toggleSound();
+  $('#view-toggle').onclick = () => actions.toggleView?.();
   $('#dialog-close').onclick = () => actions.closePanel();
   $('#dialog-backdrop').onclick = event => { if (event.target === $('#dialog-backdrop')) actions.closePanel(); };
   $('#touch-fire').onclick = () => actions.fire?.();
@@ -111,6 +113,7 @@ export function createUI(actions) {
   let lastLoadout = '', previousHealth = 100;
   function update(state) {
     currentState = state;
+    $('#view-toggle').setAttribute('aria-label', `Switch to ${state.viewMode === 'third-person' ? 'first' : 'third'}-person view (P)`);
     const health = state.health ?? 100, maxHealth = state.maxHealth ?? 100;
     $('#health-number').textContent = `${Math.ceil(health)} / ${maxHealth}`;
     $('#health-fill').style.width = `${Math.max(0, health / maxHealth * 100)}%`;
@@ -177,6 +180,7 @@ export function createUI(actions) {
   function setMode(mode) {
     currentMode = mode;
     document.body.dataset.mode = mode;
+    $('#view-toggle').disabled = mode !== 'playing';
   }
   function toast(message, type = 'info') {
     const element = document.createElement('div');
@@ -195,7 +199,7 @@ export function createUI(actions) {
     if (!refresh) dialogFocus = document.activeElement;
     const slugs = state.slugs || [];
     const panelTitle = title => `<p class="eyebrow">SLUGTERRA / FIELD SYSTEMS</p><h2 id="dialog-title">${title}</h2>`;
-    const help = `<div class="controls-grid"><div><kbd>W A S D</kbd><span>Move through the cavern</span></div><div><kbd>MOUSE</kbd><span>Look freely with cursor capture; otherwise hold right mouse and drag</span></div><div><kbd>LEFT / F</kbd><span>Fire your slug, including while holding right mouse to focus</span></div><div><kbd>RMB / C</kbd><span>Hold right mouse to focus; C toggles focus for trackpads</span></div><div><kbd>SHIFT</kbd><span>Sprint</span></div><div><kbd>SPACE</kbd><span>Jump</span></div><div><kbd>E</kbd><span>Talk, gather, and activate</span></div><div><kbd>1 · 2 · 3</kbd><span>Switch elemental companions</span></div><div><kbd>Q</kbd><span>Scan for nearby life and landmarks</span></div><div><kbd>R</kbd><span>Activate Guided Flight after training Slug Fu</span></div><div><kbd>J / M / I</kbd><span>Journal / map / slug arsenal</span></div><div><kbd>ESC</kbd><span>Pause · release cursor</span></div></div>`;
+    const help = `<div class="controls-grid"><div><kbd>W A S D</kbd><span>Move through the cavern</span></div><div><kbd>MOUSE</kbd><span>Look freely with cursor capture; otherwise hold right mouse and drag</span></div><div><kbd>LEFT / F</kbd><span>Fire your slug, including while holding right mouse to focus</span></div><div><kbd>RMB / C</kbd><span>Hold right mouse to focus; C toggles focus for trackpads</span></div><div><kbd>SHIFT</kbd><span>Sprint</span></div><div><kbd>SPACE</kbd><span>Jump</span></div><div><kbd>P</kbd><span>Switch first-person / third-person view</span></div><div><kbd>E</kbd><span>Talk, gather, and activate</span></div><div><kbd>1 · 2 · 3</kbd><span>Switch elemental companions</span></div><div><kbd>Q</kbd><span>Scan for nearby life and landmarks</span></div><div><kbd>R</kbd><span>Activate Guided Flight after training Slug Fu</span></div><div><kbd>J / M / I</kbd><span>Journal / map / slug arsenal</span></div><div><kbd>ESC</kbd><span>Pause · release cursor</span></div></div>`;
     const campaignPanel = renderCampaignPanel({ kind, state, context: currentContext, container: $('#dialog-content'), actions, rerender: () => showDialog(kind, currentState, currentContext, true), slugArt, morphed: inventoryMorphed, setMorphed: value => { inventoryMorphed = value; }, notify: toast });
     if (campaignPanel) {
       // Shared dialog focus and close controls remain the same for every panel.
@@ -256,6 +260,9 @@ export function createUI(actions) {
         } catch (error) { toast(error?.message || 'Imported clips could not be removed.', 'warning'); }
         finally { if (currentDialog === 'settings') showDialog('settings', currentState); }
       };
+    } else if (kind === 'credits') {
+      const creditURL = value => /^https?:\/\//i.test(String(value || '')) ? esc(value) : '#';
+      $('#dialog-content').innerHTML = `${panelTitle('The artists <em>behind the adventure.</em>')}<p class="dialog-intro">Uploaded character, companion and equipment models bring the caverns to life. Runtime versions are adapted for this expedition.</p>${modelCredits.map(credit => `<article class="guide-note"><div><h3>${esc(credit.title)}</h3><p>By <a href="${creditURL(credit.authorURL)}" target="_blank" rel="noopener noreferrer">${esc(credit.author)}</a> · <a href="${creditURL(credit.licenseURL)}" target="_blank" rel="noopener noreferrer">${esc(credit.license)}</a></p><p><a href="${creditURL(credit.source)}" target="_blank" rel="noopener noreferrer">Original model ↗</a></p><small>${esc(credit.changes)}</small></div></article>`).join('')}<p class="panel-footnote">Additional character models supplied by the project owner. Original procedural artwork and gameplay are retained.</p>`;
     } else if (kind === 'pause') {
       $('#dialog-content').innerHTML = `${panelTitle('Take a <em>breath.</em>')}<p class="dialog-intro">The deep can wait. Your expedition is safely saved on this device.</p><div class="pause-actions"><button class="button-primary" id="resume-game">Return to expedition ${icon('arrow')}</button><button class="button-outline" data-panel="atlas">Cavern atlas</button><button class="button-outline" data-panel="skills">Disciplines</button><button class="button-outline" data-panel="help">Field guide</button><button class="button-outline" data-panel="settings">Settings</button><button class="button-danger" id="restart-game">Start a new expedition</button></div>`;
       $('#resume-game').onclick = () => actions.resume();
@@ -272,6 +279,9 @@ export function createUI(actions) {
     } else {
       $('#dialog-content').innerHTML = `${panelTitle('Every hero <em>starts somewhere.</em>')}<p class="dialog-intro">Explore a living cavern, meet the waystation guardian, and recover three heartshards to restore the light. Your elemental companions are the key.</p>${help}<div class="guide-note">${icon('leaf')}<p><strong>Speed unlocks their power.</strong> Your slug accelerates into a Velocimorph at 100 mph (44.7 m/s) for 1.6× damage. <strong>Watch the beacons.</strong> Mint marks your path, amber marks a friend, and a violet glow marks the ancient heart. Approach a landmark and press E to interact.</p></div><div class="dialog-button-row"><button class="button-primary" id="guide-start">${currentMode === 'menu' ? 'Begin expedition' : 'Back to expedition'} ${icon('arrow')}</button></div>`;
       $('#guide-start').onclick = () => { if (currentMode === 'menu') actions.start(); else actions.resume(); };
+      const creditButton = document.createElement('button'); creditButton.className = 'button-outline'; creditButton.textContent = 'Model credits';
+      creditButton.onclick = () => showDialog('credits', currentState);
+      $('#dialog-content .dialog-button-row').append(creditButton);
     }
     $('#dialog-backdrop').hidden = false;
     if (!refresh || !document.activeElement?.isConnected || document.activeElement === document.body) $('#game-dialog').focus({ preventScroll: refresh });

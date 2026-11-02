@@ -62,12 +62,22 @@ export function firstTerrainHit(start, end, groundHeight, radius = 0.1) {
 }
 
 /** Accelerated, swept-circle character controller. Position is the player's eye. */
-export function createCharacterPhysics({ position, groundHeight, colliders = [], bounds = 88, eyeHeight = 1.85 }) {
+export function createCharacterPhysics({ position, groundHeight, colliders = [], bounds = 88, eyeHeight = 1.85, getCollisionWorld = () => null }) {
   const velocity = { x: 0, y: 0, z: 0 };
   const radius = 0.38, gravity = 22, jumpSpeed = 8, maxStep = 0.48, maxSlope = Math.tan(Math.PI * 0.3);
   let grounded = false, heldJump = false, jumpBuffer = 0, coyote = 0;
 
-  function floorAt(x, z) { return groundHeight(x, z) + eyeHeight; }
+  function floorAt(x, z) {
+    const support = getCollisionWorld()?.groundHeight(x, z, position.y - eyeHeight + 0.06) ?? -Infinity;
+    return Math.max(groundHeight(x, z), support) + eyeHeight;
+  }
+  function moveThroughGeometry(previous) {
+    const collision = getCollisionWorld();
+    if (!collision) return null;
+    const desired = { x: position.x, y: position.y, z: position.z };
+    Object.assign(position, previous);
+    return collision.move(position, desired, velocity, { eyeHeight, radius });
+  }
   function overlapsHeight(collider) {
     return position.y - eyeHeight + 0.08 < (collider.top ?? Infinity) && position.y + 0.12 > (collider.bottom ?? -Infinity);
   }
@@ -75,6 +85,7 @@ export function createCharacterPhysics({ position, groundHeight, colliders = [],
     if (next) { position.x = next.x; position.y = next.y; position.z = next.z; }
     velocity.x = velocity.y = velocity.z = 0;
     heldJump = false; jumpBuffer = 0;
+    getCollisionWorld()?.recover(position, velocity, { eyeHeight, radius });
     const floor = floorAt(position.x, position.z);
     grounded = position.y <= floor + 0.08;
     if (grounded) position.y = floor;
@@ -137,7 +148,7 @@ export function createCharacterPhysics({ position, groundHeight, colliders = [],
     const currentFloor = floorAt(position.x, position.z);
     if (position.y <= currentFloor + 0.06 && velocity.y <= 0) {
       position.y = currentFloor; grounded = true; velocity.y = 0;
-    }
+    } else if (getCollisionWorld() && position.y > currentFloor + 0.08) grounded = false;
     coyote = grounded ? 0.1 : Math.max(0, coyote - dt);
     jumpBuffer = Math.max(0, jumpBuffer - dt);
     if (jumpBuffer > 0 && coyote > 0) {
@@ -156,7 +167,12 @@ export function createCharacterPhysics({ position, groundHeight, colliders = [],
     velocity.x = targetX + (velocity.x - targetX) * attenuation;
     velocity.z = targetZ + (velocity.z - targetZ) * attenuation;
     const oldX = position.x, oldZ = position.z;
+    const beforeHorizontal = { x: position.x, y: position.y, z: position.z };
+    const walkingOnSupport = grounded;
     slide(dx, dz);
+    const horizontalContact = moveThroughGeometry(beforeHorizontal);
+    const geometrySupport = horizontalContact?.grounded && (walkingOnSupport || velocity.y <= 0);
+    if (geometrySupport) grounded = true;
     let nextFloor = floorAt(position.x, position.z);
     if ((grounded && nextFloor > currentFloor + 0.002) || (!grounded && nextFloor > position.y + EPS)) {
       const sample = 0.08;
@@ -182,14 +198,23 @@ export function createCharacterPhysics({ position, groundHeight, colliders = [],
         if (nextFloor > position.y + (grounded ? maxStep : EPS)) { position.x = oldX; position.z = oldZ; nextFloor = currentFloor; }
       }
     }
-    if (grounded && currentFloor - nextFloor <= maxStep) {
+    const beforeVertical = { x: position.x, y: position.y, z: position.z };
+    if (grounded && !geometrySupport && Math.abs(position.y - currentFloor) < maxStep + 0.08 && currentFloor - nextFloor <= maxStep) {
       position.y = nextFloor; velocity.y = 0;
     } else {
       grounded = false;
+      // A capsule can rest on a sloping rock edge even when a vertical ray
+      // through its center misses that rock. Probe down from the resolved
+      // surface instead of snapping to the distant heightfield below it.
+      if (geometrySupport) velocity.y = 0;
       position.y += velocity.y * dt - gravity * dt * dt * 0.5;
       velocity.y -= gravity * dt;
       if (position.y <= nextFloor) { position.y = nextFloor; velocity.y = 0; grounded = true; }
     }
+    const descending = velocity.y <= EPS;
+    const verticalContact = moveThroughGeometry(beforeVertical);
+    if (verticalContact?.grounded && descending) { grounded = true; velocity.y = 0; }
+    if (verticalContact?.ceiling && velocity.y > 0) velocity.y = 0;
   }
 
   function step(dt, input = {}) {
