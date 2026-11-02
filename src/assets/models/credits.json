@@ -1,0 +1,62 @@
+[
+  {
+    "archive": "cute_alien_slugterra_joules.zip",
+    "title": "Cute Alien Slugterra Joules",
+    "source": "https://sketchfab.com/3d-models/cute-alien-slugterra-joules-78a4191bb524497dba3b68f46f160a19",
+    "author": "Hui Ling",
+    "authorURL": "https://sketchfab.com/lingxldy",
+    "license": "CC-BY-4.0",
+    "licenseURL": "https://creativecommons.org/licenses/by/4.0/",
+    "changes": "Runtime copies use embedded glTF 2.0 assets; denser meshes are reduced. Original ZIPs remain unchanged."
+  },
+  {
+    "archive": "slugterra_burpy.zip",
+    "title": "Slugterra Burpy",
+    "source": "https://sketchfab.com/3d-models/slugterra-burpy-e684de765a1e4533a93fbe2d0c61c8c4",
+    "author": "Snowy Thomas",
+    "authorURL": "https://sketchfab.com/SnowyThomas1.2",
+    "license": "CC-BY-4.0",
+    "licenseURL": "https://creativecommons.org/licenses/by/4.0/",
+    "changes": "Runtime copies use embedded glTF 2.0 assets; denser meshes are reduced. Original ZIPs remain unchanged."
+  },
+  {
+    "archive": "renegade_ultra_qlc_blaster_slugterra.zip",
+    "title": "RENEGADE ULTRA QLC Blaster Slugterra",
+    "source": "https://sketchfab.com/3d-models/renegade-ultra-qlc-blaster-slugterra-1573da9e38a14029a41aa838e6155924",
+    "author": "Starkster",
+    "authorURL": "https://sketchfab.com/parmaryash2599",
+    "license": "CC-BY-4.0",
+    "licenseURL": "https://creativecommons.org/licenses/by/4.0/",
+    "changes": "Runtime copies use embedded glTF 2.0 assets; denser meshes are reduced. Original ZIPs remain unchanged."
+  },
+  {
+    "archive": "slug_shell.zip",
+    "title": "Slug Shell",
+    "source": "https://sketchfab.com/3d-models/slug-shell-4c73eda559c243a894cf419466eb2e3a",
+    "author": "Starkster",
+    "authorURL": "https://sketchfab.com/parmaryash2599",
+    "license": "CC-BY-4.0",
+    "licenseURL": "https://creativecommons.org/licenses/by/4.0/",
+    "changes": "Runtime copies use embedded glTF 2.0 assets; denser meshes are reduced. Original ZIPs remain unchanged."
+  },
+  {
+    "archive": "slugterra_blaster_x-duty_takedown.zip",
+    "title": "Slugterra Blaster (X-Duty Takedown)",
+    "source": "https://sketchfab.com/3d-models/slugterra-blaster-x-duty-takedown-635855f39ade4ce4a340ca593f42a717",
+    "author": "KetchumArts",
+    "authorURL": "https://sketchfab.com/KetchumArts",
+    "license": "CC-BY-4.0",
+    "licenseURL": "https://creativecommons.org/licenses/by/4.0/",
+    "changes": "Runtime copies use embedded glTF 2.0 assets; denser meshes are reduced. Original ZIPs remain unchanged."
+  },
+  {
+    "archive": "slugterra_blaster_gun.zip",
+    "title": "Slugterra Blaster Gun",
+    "source": "https://sketchfab.com/3d-models/slugterra-blaster-gun-bcd7bdd782d84b9cbd7f93d8b6b23cc0",
+    "author": "Starkster",
+    "authorURL": "https://sketchfab.com/parmaryash2599",
+    "license": "CC-BY-4.0",
+    "licenseURL": "https://creativecommons.org/licenses/by/4.0/",
+    "changes": "Runtime copies use embedded glTF 2.0 assets; denser meshes are reduced. Original ZIPs remain unchanged."
+  }
+]

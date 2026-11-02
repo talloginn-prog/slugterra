@@ -1,0 +1,58 @@
+[
+  {
+    "id": "burpy",
+    "runtimePath": "runtime/burpy.glb",
+    "bytes": 769964,
+    "triangles": 846,
+    "ratio": 1,
+    "sha256": "ae2b927276c313d0e60ad3a732ecbd97e92c2f18ba2936370b6b991d59f6d849"
+  },
+  {
+    "id": "joules",
+    "runtimePath": "runtime/joules.glb",
+    "bytes": 748540,
+    "triangles": 20295,
+    "ratio": 0.115,
+    "sha256": "a90fee55877835e4fd55a0e93e1cd5c2e50143941f57065fa324d7a49479fc71"
+  },
+  {
+    "id": "blaster",
+    "runtimePath": "runtime/blaster.glb",
+    "bytes": 872404,
+    "triangles": 25269,
+    "ratio": 0.27,
+    "sha256": "2e673019979a34b7249e32d47497e78ba14189c76f81dc1511cbd5f5a22d461a"
+  },
+  {
+    "id": "renegade",
+    "runtimePath": "runtime/renegade.glb",
+    "bytes": 946956,
+    "triangles": 23971,
+    "ratio": 0.27,
+    "sha256": "6d1f95495cbd84be37229aa0f6e4ce65d2876b1cdec54523f9817cb94f1ab23c"
+  },
+  {
+    "id": "x-duty",
+    "runtimePath": "runtime/x-duty.glb",
+    "bytes": 1004348,
+    "triangles": 24009,
+    "ratio": 0.4,
+    "sha256": "f379f041daa5ef49cf9986543765ae3ccb496f9b87233b326bbe6b7ad342cb16"
+  },
+  {
+    "id": "eli",
+    "runtimePath": "runtime/eli.glb",
+    "bytes": 9706908,
+    "triangles": 214517,
+    "ratio": "Original body/clothes; reduced hair only",
+    "sha256": "0006f5d99b1bf4dc3eba0a8a44b5a3d5dc0048590636d05a6a1c5d626026ba8a"
+  },
+  {
+    "id": "shell",
+    "runtimePath": "runtime/shell.glb",
+    "bytes": 118812,
+    "triangles": 3104,
+    "ratio": 1,
+    "sha256": "9c11ecd83e563f10acb1a8491cb3cc5964d06c3cdaefff3b0bd1b96fe3e1e2cc"
+  }
+]

@@ -1,0 +1,189 @@
+{
+  "status": "Sourced reference catalog; numerical gameplay tuning deliberately excluded",
+  "sourceEdition": "Disney-hosted legacy Slug Arsenal, NerdCorps author metadata",
+  "canonicalSpecies": [
+    {
+      "id": "infurnus",
+      "name": "Infurnus",
+      "sourceNumber": "001",
+      "sourceElement": "Fire",
+      "sourcePower": "A powerful fire slug",
+      "sourceRarityLabel": "Ultra Rare",
+      "habitat": "Lava lakes and fire pits",
+      "famousNamedSlug": "Burpy",
+      "sourceUrl": "https://dolimg.com/media/en-US/games/html5/slugarsenal/infurnus.html",
+      "retrievalStatus": 200,
+      "visualReferences": {
+        "protoform": {
+          "url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Infurnus/Opening_Burpy.png",
+          "visuallyVerified": true,
+          "repositoryPath": "src/assets/references/burpy-protoform.png"
+        },
+        "velocimorph": {
+          "url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Infurnus/Burpy_transformmatte2.png",
+          "visuallyVerified": true,
+          "repositoryPath": "src/assets/references/burpy-velocimorph.png"
+        }
+      },
+      "gameplayStats": null,
+      "formalClass": null
+    },
+    {
+      "id": "tazerling",
+      "name": "Tazerling",
+      "sourceNumber": "002",
+      "sourceElement": "Electricity",
+      "sourcePower": "Electricity",
+      "sourceRarityLabel": "Common",
+      "habitat": "Dry prairies and deserts with lots of storm activity",
+      "famousNamedSlug": "Joules",
+      "sourceUrl": "https://dolimg.com/media/en-US/games/html5/slugarsenal/tazerling.html",
+      "retrievalStatus": 200,
+      "visualReferences": {
+        "protoform": {
+          "url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Tazerling/Opening_Joules_CP.png",
+          "visuallyVerified": true,
+          "repositoryPath": "src/assets/references/joules-protoform.png"
+        },
+        "velocimorph": {
+          "url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Tazerling/Joules_transformmatte.png",
+          "visuallyVerified": true,
+          "repositoryPath": "src/assets/references/joules-velocimorph.png"
+        }
+      },
+      "gameplayStats": null,
+      "formalClass": null
+    },
+    {
+      "id": "aquabeek",
+      "name": "AquaBeek",
+      "sourceNumber": "015",
+      "sourceElement": "Water",
+      "sourcePower": "Water and sonar",
+      "sourceRarityLabel": "Uncommon",
+      "habitat": "Sea caverns",
+      "famousNamedSlug": "Beeker",
+      "sourceUrl": "https://dolimg.com/media/en-US/games/html5/slugarsenal/aquabeek.html",
+      "retrievalStatus": 200,
+      "visualReferences": {
+        "protoform": {
+          "url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/AquaBeek/1.png",
+          "visuallyVerified": false
+        },
+        "velocimorph": {
+          "url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/AquaBeek/6.png",
+          "visuallyVerified": false
+        }
+      },
+      "gameplayStats": null,
+      "formalClass": null
+    },
+    {
+      "id": "boon-doc",
+      "name": "Boon Doc",
+      "sourceNumber": "003",
+      "sourceElement": "Light",
+      "sourcePower": "Healing",
+      "sourceRarityLabel": "Extremely Rare",
+      "habitat": "Jungle caverns",
+      "famousNamedSlug": "Doc",
+      "sourceUrl": "https://dolimg.com/media/en-US/games/html5/slugarsenal/boon_doc.html",
+      "retrievalStatus": 200,
+      "visualReferences": {
+        "protoform": {
+          "url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Boon%20Doc/Opening_Doc.png",
+          "visuallyVerified": true,
+          "repositoryPath": "src/assets/references/doc-protoform.png"
+        },
+        "velocimorph": {
+          "url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Boon%20Doc/Doc_transformmatte.png",
+          "visuallyVerified": true,
+          "repositoryPath": "src/assets/references/doc-velocimorph.png"
+        }
+      },
+      "gameplayStats": null,
+      "formalClass": null
+    },
+    {
+      "id": "frostcrawler",
+      "name": "Frostcrawler",
+      "sourceNumber": "008",
+      "sourceElement": "Ice",
+      "sourcePower": "Freezing and ice",
+      "sourceRarityLabel": "Common",
+      "habitat": "Frozen Northern caverns",
+      "famousNamedSlug": "Chiller",
+      "sourceUrl": "https://dolimg.com/media/en-US/games/html5/slugarsenal/frostcrawler.html",
+      "retrievalStatus": 200,
+      "visualReferences": {
+        "protoform": {
+          "url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Frostcrawler/Opening_Chiller.png",
+          "visuallyVerified": true,
+          "repositoryPath": "src/assets/references/frost-protoform.png"
+        },
+        "velocimorph": {
+          "url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Frostcrawler/FrostCrawler_transformmatte2.png",
+          "visuallyVerified": true,
+          "repositoryPath": "src/assets/references/frost-velocimorph.png"
+        }
+      },
+      "gameplayStats": null,
+      "formalClass": null
+    },
+    {
+      "id": "phosphoro",
+      "name": "Phosphoro",
+      "sourceNumber": "021",
+      "sourceElement": "Light",
+      "sourcePower": "Light",
+      "sourceRarityLabel": "Common",
+      "habitat": "Sun-drenched deserts",
+      "famousNamedSlug": "Glimmer",
+      "sourceUrl": "https://dolimg.com/media/en-US/games/html5/slugarsenal/phosphoro.html",
+      "retrievalStatus": 200,
+      "visualReferences": {
+        "protoform": {
+          "url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Phosphoro/3.png",
+          "visuallyVerified": true,
+          "repositoryPath": "src/assets/references/glow-protoform.png"
+        },
+        "velocimorph": {
+          "url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Phosphoro/Phosphoro_Transformed_312x340.png",
+          "visuallyVerified": true,
+          "repositoryPath": "src/assets/references/glow-velocimorph.png"
+        }
+      },
+      "gameplayStats": null,
+      "formalClass": null
+    },
+    {
+      "id": "enigmo",
+      "name": "Enigmo",
+      "sourceNumber": "017",
+      "sourceElement": "Light",
+      "sourcePower": "Perception effect",
+      "sourceRarityLabel": "Ultra Rare",
+      "habitat": "Jungle and forest caverns",
+      "famousNamedSlug": "Mo",
+      "sourceUrl": "https://dolimg.com/media/en-US/games/html5/slugarsenal/enigmo.html",
+      "retrievalStatus": 200,
+      "visualReferences": {
+        "protoform": {
+          "url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Enigmo/2.png",
+          "visuallyVerified": false
+        },
+        "velocimorph": {
+          "url": "https://dolimg.com/media/en-US/games/html5/slugarsenal/images/arsenal/slugs/Enigmo/Enigmo_transformmatte2.png",
+          "visuallyVerified": false
+        }
+      },
+      "gameplayStats": null,
+      "formalClass": null
+    }
+  ],
+  "legacyInstanceMap": {
+    "ember": "infurnus",
+    "volt": "tazerling",
+    "tide": "aquabeek"
+  }
+}
