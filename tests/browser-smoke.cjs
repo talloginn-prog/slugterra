@@ -196,11 +196,12 @@ async function main() {
     await mobile.screenshot({ path: path.join(root, 'test-results/mobile.png') });
     await mobile.locator('#begin-button').tap();
     await mobile.waitForFunction(() => window.__SLUGTERRA__.mode === 'playing');
-    const moveButton = await mobile.getByRole('button', { name: 'Move forward', exact: true }).boundingBox();
+    const moveButton = await mobile.locator('#touch-stick').boundingBox();
     assert.ok(moveButton, 'Touch movement controls are visible');
     const touch = await mobile.context().newCDPSession(mobile);
     const mobileZ = await mobile.evaluate(() => window.__SLUGTERRA__.player.z);
     await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: moveButton.x + moveButton.width / 2, y: moveButton.y + moveButton.height / 2, id: 1 }] });
+    await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: moveButton.x + moveButton.width / 2, y: moveButton.y + 12, id: 1 }] });
     await mobile.waitForFunction(z => window.__SLUGTERRA__.player.z > z + 0.8, mobileZ, { timeout: 20000 });
     await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     await mobile.evaluate(() => window.__SLUGTERRA__.teleport(0, 32));

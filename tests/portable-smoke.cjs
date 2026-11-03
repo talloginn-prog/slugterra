@@ -66,7 +66,7 @@ async function main() {
     const requests = [], errors = [];
     let loopbackOrigin = null, offlineGameplay = false;
     async function openContext(offline) {
-      const context = await browser.newContext({ viewport: { width: 1000, height: 700 }, offline });
+      const context = await browser.newContext({ viewport: { width: 1000, height: 700 }, hasTouch: true, offline });
       await context.route(/^https?:\/\//i, route => {
         const url = route.request().url();
         if (loopbackOrigin && new URL(url).origin === loopbackOrigin && !offlineGameplay) return route.continue();
@@ -119,11 +119,19 @@ async function main() {
     if (await page.locator('#confirm-restart').isVisible()) await page.locator('#confirm-restart').click();
     await page.waitForFunction(() => document.body.dataset.mode === 'playing', undefined, { timeout });
     assert.equal(await page.locator('#loadout button').count(), 3);
-    await page.keyboard.press('p');
+    assert.equal(await page.locator('#touch-stick').isVisible(), true);
+    await page.locator('[data-touch-action="view"]').tap();
     await page.waitForFunction(() => document.querySelector('#view-toggle').getAttribute('aria-label').includes('first-person'), undefined, { timeout });
     await page.keyboard.press('p');
     await page.waitForFunction(() => document.querySelector('#view-toggle').getAttribute('aria-label').includes('third-person'), undefined, { timeout });
-    console.log('PASS: offline portable production game boots WebGL and enters play without development hooks');
+    const touchSession = await context.newCDPSession(page), stick = await page.locator('#touch-stick').boundingBox();
+    const point = { x: stick.x + stick.width / 2, y: stick.y + stick.height / 2, id: 1 };
+    await touchSession.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point] });
+    await touchSession.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ ...point, y: point.y - 28 }] });
+    await page.waitForFunction(() => document.querySelector('#touch-stick').classList.contains('pressed'));
+    await touchSession.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await page.waitForFunction(() => !document.querySelector('#touch-stick').classList.contains('pressed'));
+    console.log('PASS: offline portable WebGL and bundled touchscreen stick/view controls work without development hooks');
 
     await page.keyboard.press('i');
     await page.waitForSelector('.campaign-collection', { timeout });

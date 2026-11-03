@@ -24,6 +24,7 @@ npm run test:browser   # Complete original quest, combat, saves and touch contro
 npm run test:campaign  # Services, collection, Slug Fu, discoveries and travel saves
 npm run test:lifecycle # Live quality changes, GPU cleanup and surface audio
 npm run test:collision # Solid scenery, landings, gates and uploaded models
+npm run test:touch     # Multi-finger controls, two-thumb combat, cancellation and mobile layouts
 npm run test:camera    # P switching, third-person combat and camera obstruction
 npm run test:expansion # New regions/discoveries, moving slingers, shot timing and ultrawide UI
 npm run test:abilities # Actual support, visible web binding and ramming impacts
@@ -56,6 +57,12 @@ Browser suites use Playwright and system Chromium at `/usr/bin/chromium`; set `C
 | **Esc** | Pause, release the cursor or close a panel |
 
 Aim and fire work in either button order. Without pointer lock, hold right mouse and drag to turn without firing; left-drag also turns. The HUD supplies touch controls and a view-switch button. The atlas shows cavern connections; the collection equips discovered companions into three slots. Starting a new journey requires confirmation because it replaces saved game progress.
+
+## Touchscreen controls
+
+Phones, tablets and touch-capable laptops automatically show a left movement stick and a right action pad during play. Drag the stick for analog walking, and hold **SPRINT** to run. Swipe the world to look; **drag FIRE** to turn while shooting with two thumbs. A separate look finger takes priority when using more fingers. Hold **AIM** for focus, and use **JUMP**, **USE**, **SCAN**, **SLUG FU**, **VIEW**, **PAUSE** and **SLUGS** for the other actions. Tap a companion in the dock to select it.
+
+Fingers are tracked independently, so movement, looking, aiming and firing can overlap. Pausing, changing cavern, backgrounding the page or rotating the device releases held controls. The layouts support portrait and landscape, with safe-area spacing and buttons at least 44 CSS pixels across. Keyboard and mouse remain available.
 
 ## Five connected caverns
 

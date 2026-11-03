@@ -69,6 +69,10 @@ CONTROLS
 WASD/arrows move; Shift sprint; Space jump; mouse look.
 Left click/F fires. Hold right click to aim; C toggles focus.
 P switches between first-person and third-person view.
+TOUCH: left stick moves; swipe the world to look. Hold FIRE to shoot, or drag
+FIRE to turn while shooting. Hold AIM/SPRINT; tap JUMP, USE, SCAN, SLUG FU,
+VIEW, PAUSE or SLUGS. Tap a companion to select it. Controls release on pause,
+rotation and backgrounding. Phone, tablet and hybrid touch displays are supported.
 Right-click aim and left-click fire can be pressed in either order.
 Without pointer lock, right-drag turns without firing; left-drag also turns.
 E speaks/rests/collects/travels; 1/2/3 select your three equipped companions.

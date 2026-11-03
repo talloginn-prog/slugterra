@@ -45,3 +45,21 @@ All ten supplied ZIPs, seven runtime GLBs, supplied attribution, original compan
 The character capsule collides with selected solid meshes and instances; terrain remains a heightfield. Decorative grass, water effects, glow and small ornaments remain permeable. Shared imported geometry/materials belong to a page-lifetime cache; cloned skeleton bone textures are disposed with replaced instances. Eli uses procedural movement because no authored character-animation clips were supplied.
 
 The portable package embeds runtime data into one HTML file. Managed Chromium requires the documented loopback fallback for file-URL testing; offline play must then make no HTTP requests. Consumer file launching and RTX 5060 Ti performance have not been measured in this environment. Saves and personal audio belong to a browser origin and do not synchronize between devices or hostnames.
+
+## Touchscreen continuation
+
+This update continues commit `6b9a817`, retained by tag `backup/pre-touch-controls-6b9a817`. The earlier expansion results above describe the preceding implementation.
+
+The new pointer controller tracks a thumbstick, a look finger and action fingers independently. It supports analog movement with a dead zone, held fire/aim/sprint, two-thumb fire-drag turning, jump, interaction, scan, Slug Fu, view switching, pause and arsenal access. Companion selection remains available through the existing dock. Separate look input takes priority over fire-drag turning. Touch/pen gestures do not generate duplicate mouse shots, and keyboard/mouse input remains independent.
+
+Held input and pointer captures reset on pause, cavern changes, backgrounding, cancellation and resize/rotation. Touch-capable laptops show the controls even with a fine primary pointer; touch start does not request mouse capture. Phone portrait, phone landscape and tablet controls use at least 44 CSS-pixel targets and safe-area margins. Settings sensitivity adjusts both mouse and touch turning.
+
+| Check | Result |
+| --- | --- |
+| `npm test` | Passed: 90 tests, including eight new multi-touch/gesture/lifecycle/accessibility cases and existing mouse chord behavior |
+| `npm run test:touch` | Passed: four simultaneous native touch contacts, independent releases/cancellation, fire-drag turning, actual jumping/interaction/view/selection/sprint, held-input pause cleanup, rotation, layout bounds and fine-pointer hybrid detection |
+| `npm run package:game` | Passed: production build, 22,428,310-byte portable HTML and 11,836,896-byte ZIP |
+| `npm run test:browser` | Passed: complete quest, Warden, ending, input chords, saves and real mobile joystick/interaction |
+| `npm run test:portable` | Passed: offline WebGL, real joystick gesture/release and touch view switching, collection/atlas, all embedded assets unchanged and no HTTP requests |
+
+Touch browser checks use Chromium's emulated touch device and real WebGL. Physical iOS/Android hardware has not been exercised in this cloud environment. Screenshots remain under ignored `test-results/`; the portable guide includes touchscreen instructions.

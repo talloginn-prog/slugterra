@@ -14,6 +14,7 @@ import metamorphosisClip from './assets/audio/slugterra-metamorphosis-shot.mp3?i
 import { createSlugModel, createBlasterModel } from './models.js';
 import { createCharacterPhysics, segmentSphereHit, segmentCapsuleHit, firstTerrainHit } from './physics.js';
 import { createMouseControls } from './input.js';
+import { createTouchControls } from './touch-input.js';
 import { createSceneCollision } from './collision.js';
 import { prepareImportedModels, getImportedModelStatus, createImportedCharacter, applyImportedSlug, createImportedBlaster } from './imported-models.js';
 import { registerImportedModels } from './model-registry.js';
@@ -125,6 +126,14 @@ let simulationRemainder = 0, footstepDistance = 0, shotSerial = 0, jumpQueued = 
 const simulationStep = 1 / 120;
 let currentInteraction = null, elapsed = 0, bossSpawned = false;
 const keys = new Set();
+let touchControls = null;
+const touchAvailable = navigator.maxTouchPoints > 0 || matchMedia('(any-pointer: coarse)').matches;
+document.documentElement.classList.toggle('touch-input', touchAvailable);
+let lastPointerWasTouch = touchAvailable && matchMedia('(pointer: coarse)').matches;
+document.addEventListener('pointerdown', event => {
+  lastPointerWasTouch = ['touch', 'pen'].includes(event.pointerType);
+  if (lastPointerWasTouch) document.documentElement.classList.add('touch-input');
+}, { capture: true });
 const player = new THREE.Vector3(world.spawn.x, world.groundHeight(world.spawn.x, world.spawn.z) + 1.85, world.spawn.z);
 const character = createCharacterPhysics({ position: player, groundHeight: (x, z) => world.groundHeight(x, z), colliders: playerColliders, getCollisionWorld: () => world.collisionWorld, bounds: 88 });
 const projectiles = [], bursts = [], enemies = [], floatingLabels = [];
@@ -173,7 +182,6 @@ const ui = createUI({
   useSkill,
   toggleView,
   fire: shoot,
-  touch: (key, pressed) => { pressed ? keys.add(key.toLowerCase()) : keys.delete(key.toLowerCase()); },
   interact,
   importAudio: async (slot, file) => {
     await audio.unlock();
@@ -370,7 +378,7 @@ function loadCavern(id, { restoring = false, position = null } = {}) {
   const x = THREE.MathUtils.clamp(destination.x ?? world.spawn.x, -85, 85);
   const z = THREE.MathUtils.clamp(destination.z ?? world.spawn.z, -85, 85);
   player.set(x, world.groundHeight(x, z) + 1.85, z);
-  character.reset(); keys.clear(); jumpQueued = false; focusToggled = false; aiming = false; mouse.reset();
+  character.reset(); keys.clear(); jumpQueued = false; focusToggled = false; aiming = false; mouse.reset(); touchControls?.reset();
   simulationRemainder = 0; footstepDistance = 0; currentInteraction = null;
   yaw = Math.PI; pitch = 0; camera.position.copy(player); camera.rotation.set(pitch, yaw, 0, 'YXZ');
   ranger.visible = id === 'luminous';
@@ -449,7 +457,7 @@ function startGame(fresh) {
   player.set(p.x, world.groundHeight(p.x, p.z) + 1.85, p.z);
   yaw = result.event === 'restored' ? 0 : Math.PI;
   pitch = 0;
-  keys.clear(); jumpQueued = false; focusToggled = false; mouse.reset(); character.reset(); simulationRemainder = 0;
+  keys.clear(); jumpQueued = false; focusToggled = false; mouse.reset(); touchControls?.reset(); character.reset(); simulationRemainder = 0;
   panelOpen = false; ui.closeDialog(); mode = 'playing'; ui.setMode(mode);
   launcher.visible = !view.thirdPerson;
   populateEnemies(); applySettings(); applyAtmosphere(); updateCollected(); refreshWeapon(); rebuildPets();
@@ -457,7 +465,7 @@ function startGame(fresh) {
   requestPointer();
 }
 function requestPointer() {
-  if (!canvas.requestPointerLock || matchMedia('(pointer: coarse)').matches) return;
+  if (!canvas.requestPointerLock || lastPointerWasTouch) return;
   try {
     const result = canvas.requestPointerLock();
     if (result?.catch) result.catch(() => ui.toast('Click and drag the world to look around. WASD to move.', 'info'));
@@ -470,7 +478,7 @@ function releasePointer() {
 }
 function openPanel(kind, context = {}) {
   if (!panelOpen) previousMode = mode;
-  panelOpen = true; keys.clear(); jumpQueued = false; focusToggled = false; mouse.reset(); simulationRemainder = 0;
+  panelOpen = true; keys.clear(); jumpQueued = false; focusToggled = false; mouse.reset(); touchControls?.reset(); simulationRemainder = 0;
   if (mode !== 'menu') { mode = 'paused'; ui.setMode(mode); game.save(player); }
   releasePointer(); ui.showDialog(kind, game.state, context);
 }
@@ -481,7 +489,7 @@ function closePanel() {
 }
 function resumeGame() {
   panelOpen = false; ui.closeDialog(); mode = 'playing'; ui.setMode(mode);
-  keys.clear(); mouse.reset(); simulationRemainder = 0; requestPointer();
+  keys.clear(); mouse.reset(); touchControls?.reset(); simulationRemainder = 0; requestPointer();
 }
 function applySettings() {
   audio.setEnabled(game.state.settings.sound);
@@ -810,8 +818,8 @@ function scan() {
 }
 
 function movePlayer(dt) {
-  const xInput = Number(keys.has('d') || keys.has('arrowright')) - Number(keys.has('a') || keys.has('arrowleft'));
-  const zInput = Number(keys.has('w') || keys.has('arrowup')) - Number(keys.has('s') || keys.has('arrowdown'));
+  const xInput = Number(keys.has('d') || keys.has('arrowright')) - Number(keys.has('a') || keys.has('arrowleft')) + (touchControls?.x || 0);
+  const zInput = Number(keys.has('w') || keys.has('arrowup')) - Number(keys.has('s') || keys.has('arrowdown')) + (touchControls?.z || 0);
   forward.set(-Math.sin(yaw), 0, -Math.cos(yaw)); right.set(Math.cos(yaw), 0, -Math.sin(yaw));
   const move = new THREE.Vector3().addScaledVector(forward, zInput).addScaledVector(right, xInput);
   if (move.lengthSq() > 1) move.normalize();
@@ -819,22 +827,22 @@ function movePlayer(dt) {
   if (!world.collisionReady) playerColliders.push(...colliders);
   for (const enemy of enemies) if (!enemy.dead) playerColliders.push({ x: enemy.root.position.x, z: enemy.root.position.z, radius: enemy.radius * .8, bottom: enemy.root.position.y - enemy.centerHeight, top: enemy.root.position.y - enemy.centerHeight + enemy.height });
   const before = player.clone(), wasGrounded = character.grounded, previousFall = character.velocity.y;
-  character.step(dt, { x: move.x, z: move.z, jump: jumpQueued || keys.has(' '), sprint: keys.has('shift'), aiming });
+  character.step(dt, { x: move.x, z: move.z, jump: jumpQueued || keys.has(' '), sprint: keys.has('shift') || touchControls?.sprinting, aiming });
   jumpQueued = false;
   if (wasGrounded && !character.grounded && character.velocity.y > 0) audio.jump?.();
   if (!wasGrounded && character.grounded && previousFall < -1) audio.land?.(Math.min(1, -previousFall / 12));
   if (character.grounded) {
     footstepDistance += Math.hypot(player.x - before.x, player.z - before.z);
-    if (footstepDistance > (keys.has('shift') ? 2.5 : 1.9)) {
+    if (footstepDistance > (keys.has('shift') || touchControls?.sprinting ? 2.5 : 1.9)) {
       const river = world.map?.river;
       const riverPoint = river?.reduce((best, point) => !best || Math.abs(point.z - player.z) < Math.abs(best.z - player.z) ? point : best, null);
       const riverCenter = game.state.currentCavern === 'luminous' ? -7 + Math.sin(player.z * 0.035) * 13 : riverPoint?.x;
       const wet = Number.isFinite(riverCenter) && Math.abs(player.x - riverCenter) < 3;
-      audio.footstep?.(wet ? 'water' : 'stone', keys.has('shift') ? 1.3 : 1); footstepDistance = 0;
+      audio.footstep?.(wet ? 'water' : 'stone', keys.has('shift') || touchControls?.sprinting ? 1.3 : 1); footstepDistance = 0;
     }
   }
   placeCamera();
-  if (mouse.firing || keys.has('f')) shoot();
+  if (mouse.firing || keys.has('f') || touchControls?.firing) shoot();
 }
 function updateView(dt) {
   placeCamera();
@@ -918,7 +926,7 @@ document.addEventListener('keydown', event => {
     if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) event.preventDefault();
     if (key === ' ' && !event.repeat) jumpQueued = true;
     if (key === 'f' && !event.repeat) shoot();
-    if (key === 'c') { focusToggled = !focusToggled; aiming = focusToggled || mouse.aiming; }
+    if (key === 'c') { focusToggled = !focusToggled; aiming = focusToggled || mouse.aiming || Boolean(touchControls?.aiming); }
     if (key === 'e') interact();
     if (key === 'q') scan();
     if (key === 'r') { const result = useSkill('slug-fu'); if (!result.ok) ui.toast(result.message, 'info'); }
@@ -939,7 +947,7 @@ const mouse = createMouseControls({
   isActive: () => mode === 'playing' && !panelOpen,
   isLocked: () => document.pointerLockElement === canvas,
   onFire: shoot,
-  onAim: held => { aiming = held || focusToggled; },
+  onAim: held => { aiming = held || focusToggled || Boolean(touchControls?.aiming); },
   onLook: (x, y) => {
     const multiplier = aiming ? 0.0014 : 0.0021;
     yaw -= x * multiplier;
@@ -953,16 +961,28 @@ document.addEventListener('pointerlockchange', () => {
   ui.setPointerLocked(Boolean(document.pointerLockElement));
   if (!document.pointerLockElement && mode === 'playing' && !panelOpen && !suppressUnlock) openPanel('pause');
 });
-let touchPoint = null;
-canvas.addEventListener('touchstart', e => { if (mode === 'playing') touchPoint = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }, { passive: true });
-canvas.addEventListener('touchmove', e => {
-  if (mode !== 'playing' || !touchPoint) return;
-  const t = e.touches[0]; yaw -= (t.clientX - touchPoint.x) * 0.005;
-  pitch = THREE.MathUtils.clamp(pitch - (t.clientY - touchPoint.y) * 0.005, -1.35, 1.35);
-  touchPoint = { x: t.clientX, y: t.clientY };
-}, { passive: true });
-canvas.addEventListener('touchend', () => { touchPoint = null; });
-window.addEventListener('blur', () => { keys.clear(); focusToggled = false; mouse.reset(); if (mode === 'playing') openPanel('pause'); });
+touchControls = createTouchControls({
+  element: canvas, controls: document.querySelector('.touch-controls'),
+  isActive: () => mode === 'playing' && !panelOpen,
+  onActivate: () => { document.documentElement.classList.add('touch-input'); audio.unlock(); },
+  onFire: shoot,
+  onAim: held => { aiming = held || mouse.aiming || focusToggled; },
+  onLook: (x, y) => {
+    const multiplier = (aiming ? .003 : .005) * game.state.settings.sensitivity;
+    yaw -= x * multiplier; pitch = THREE.MathUtils.clamp(pitch - y * multiplier, -1.35, 1.35);
+    camera.rotation.set(pitch, yaw, 0, 'YXZ');
+  },
+  onAction: action => {
+    if (action === 'jump') jumpQueued = true;
+    if (action === 'interact') interact();
+    if (action === 'view') toggleView();
+    if (action === 'scan') scan();
+    if (action === 'skill') { const result = useSkill('slug-fu'); if (!result.ok) ui.toast(result.message, 'info'); }
+    if (action === 'pause') openPanel('pause');
+    if (action === 'arsenal') openPanel('inventory');
+  },
+});
+window.addEventListener('blur', () => { keys.clear(); focusToggled = false; mouse.reset(); touchControls?.reset(); if (mode === 'playing') openPanel('pause'); });
 window.addEventListener('beforeunload', () => { if (mode !== 'menu') game.save(player); });
 window.addEventListener('resize', resizeDisplay);
 
@@ -1021,6 +1041,7 @@ if (import.meta.env.DEV) {
     game, player, enemies, camera, renderer, character, projectiles, combatStats, audio, launcher, blaster, mouse, colliders,
     get world() { return world; },
     get display() { return { ...display }; },
+    get touchInput() { return { x: touchControls.x, z: touchControls.z, firing: touchControls.firing, aiming: touchControls.aiming, sprinting: touchControls.sprinting }; },
     get viewMode() { return view.mode; },
     get playerAvatar() { return playerAvatar; },
     get aiming() { return aiming; },

@@ -18,7 +18,8 @@
     "test:camera": "node tests/camera-browser.cjs",
     "verify:models": "node scripts/model-assets.mjs",
     "test:expansion": "node tests/expansion-browser.cjs",
-    "test:abilities": "node tests/abilities-browser.cjs"
+    "test:abilities": "node tests/abilities-browser.cjs",
+    "test:touch": "node tests/touch-browser.cjs"
   },
   "dependencies": {
     "three": "0.180.0"
