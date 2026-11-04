@@ -21,10 +21,17 @@ import { registerImportedModels } from './model-registry.js';
 import { createViewController } from './camera-view.js';
 import { calculateDisplay } from './display.js';
 import { createSlugEffects } from './slug-effects.js';
+import { createAccountSaves } from './account-saves.js';
 import './style.css';
 
 const canvas = document.querySelector('#game-canvas');
-const game = createGameState();
+let updateAccountUI = () => {};
+const accountSaves = createAccountSaves({ onChange: () => updateAccountUI() });
+const accountServiceEnabled = Boolean(document.querySelector('meta[name="slugterra-account-service"]'));
+if (accountServiceEnabled) await accountSaves.initialize();
+else accountSaves.status.phase = 'local';
+const game = createGameState(accountSaves.storage);
+game.state.account = accountSaves.status;
 let display = calculateDisplay({ width: innerWidth, height: innerHeight, ...game.state.settings, pixelRatio: Math.min(devicePixelRatio, 1.5) });
 const view = createViewController();
 const audio = createAudio({
@@ -185,6 +192,11 @@ const ui = createUI({
   toggleView,
   fire: shoot,
   interact,
+  syncProgress: () => { game.save(mode === 'menu' ? undefined : player); void accountSaves.retry(); },
+  useCloudProgress: () => { if (accountSaves.useCloud()) startGame(false); },
+  keepDeviceProgress: () => { accountSaves.keepLocal(); },
+  importGuestProgress: () => { if (accountSaves.importGuest()) startGame(false); },
+  beforeAccountNavigation: () => { if (mode !== 'menu') game.save(player); void accountSaves.flush(); },
   importAudio: async (slot, file) => {
     await audio.unlock();
     const result = await audio.loadClip(slot, file);
@@ -196,6 +208,7 @@ const ui = createUI({
     game.state.audio = audio.getStatus(); ui.update(game.state); return result;
   },
 });
+updateAccountUI = () => { game.state.account = accountSaves.status; ui.update(game.state); };
 damageFlash = document.querySelector('#damage-flash');
 
 // A tiny, expressive ranger and slug companions inhabit Haven.
@@ -1011,6 +1024,8 @@ touchControls = createTouchControls({
 });
 window.addEventListener('blur', () => { keys.clear(); focusToggled = false; mouse.reset(); touchControls?.reset(); if (mode === 'playing') openPanel('pause'); });
 window.addEventListener('beforeunload', () => { if (mode !== 'menu') game.save(player); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') { if (mode !== 'menu') game.save(player); void accountSaves.flush(); } });
+window.addEventListener('online', () => { if (accountServiceEnabled) void accountSaves.retry(); });
 window.addEventListener('resize', resizeDisplay);
 
 const clock = new THREE.Clock();
@@ -1051,6 +1066,13 @@ function frame() {
 applyAtmosphere();
 resizeDisplay();
 ui.setMode('menu'); ui.update(game.state); frame();
+const accountNotice = new URL(location.href).searchParams.get('account');
+if (accountServiceEnabled && ['signin', 'error'].includes(accountNotice)) {
+  openPanel('account');
+  if (accountNotice === 'error') ui.toast('Sign-in did not finish. Your device journey is unchanged. Try signing in again.', 'warning');
+  const cleanURL = new URL(location.href); cleanURL.searchParams.delete('account'); cleanURL.searchParams.delete('error');
+  history.replaceState(null, '', cleanURL.pathname + cleanURL.search + cleanURL.hash);
+}
 requestAnimationFrame(() => {
   prepareImportedModels().then(() => {
     registerImportedModels({ slug: applyImportedSlug, blaster: createImportedBlaster });

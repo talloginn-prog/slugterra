@@ -124,3 +124,20 @@ html.touch-input .loadout-label{font-size:6px}html.touch-input .loadout-label sp
 
 html.touch-input .topbar{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
 @container (max-height:500px){html.touch-input .campaign-status-meta{display:none}html.touch-input body[data-mode=playing] .minimap-wrap{top:140px}}
+
+/* Account progress stays reachable with either mouse or touch. */
+.account-access{display:flex;align-items:center;gap:8px;min-width:44px;min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:24px;color:var(--mint);font-size:12px;white-space:nowrap}
+.account-access[data-status="conflict"],.account-access[data-status="offline"]{color:#ffd599;border-color:#ffd59977}
+.account-identity{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;overflow-wrap:anywhere}
+.account-identity span{font-size:10px;letter-spacing:.1em;color:var(--mint)}
+.account-signin,.account-signout{pointer-events:auto;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;min-height:44px}
+.save-comparison{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:24px 0}
+.save-comparison article{padding:20px;border:1px solid var(--line);border-radius:8px;background:#12323488}
+.save-comparison small{letter-spacing:.12em;color:var(--mint)}
+.save-comparison p{line-height:1.6;color:var(--muted)}
+.account-guest-save{pointer-events:auto;margin-top:24px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;line-height:1.7}
+.account-guest-save summary{min-height:44px;cursor:pointer;color:var(--mint)}
+@media(max-width:1499px){.account-access{padding:8px;width:44px;justify-content:center}.account-access span{display:none}}
+@media(max-width:600px){.save-comparison{grid-template-columns:1fr}.header-tools{gap:3px}.account-access{width:44px;padding:4px;min-width:44px;min-height:44px}}
+
+.account-signout-form{display:inline-flex;margin:0;pointer-events:auto}

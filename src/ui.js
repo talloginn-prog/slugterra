@@ -57,6 +57,7 @@ export function createUI(actions) {
       <nav class="main-nav" aria-label="Game navigation"><button class="nav-link active" data-explore>Explore <span>01</span></button><button class="nav-link" data-panel="inventory">Slug arsenal <span>02</span></button><button class="nav-link" data-panel="journal">Field journal <span>03</span></button><button class="nav-link" data-panel="atlas">Cavern atlas <span>04</span></button></nav>
       <div class="header-tools"><span class="live-label"><i></i> EXPEDITIONS</span><button class="icon-button" id="minimap-toggle" aria-label="Hide minimap" aria-pressed="true" title="Show or hide minimap">${icon('compass')}</button><button class="icon-button mobile-atlas-button" data-panel="atlas" aria-label="Cavern atlas">${icon('compass')}</button><button class="icon-button" id="view-toggle" aria-label="Switch to third-person view (P)" title="Switch view (P)">P</button><button class="icon-button" id="sound-toggle" aria-label="Toggle sound">${icon('sound')}</button><button class="icon-button" data-panel="settings" aria-label="Settings">${icon('gear')}</button></div>
     </header>
+    <button class="account-access" data-panel="account" id="account-access" aria-label="Account and saved progress">◈ <span id="account-label">Saved progress</span></button>
     <main class="menu-content" id="menu-content">
       <div class="expedition-label"><span class="tiny-cross">◈</span> THE SLUGSLINGER'S FRONTIER <span class="label-line"></span></div>
       <p class="eyebrow">DISCOVER THE WORLD BELOW</p>
@@ -99,6 +100,7 @@ export function createUI(actions) {
     <div class="loading-status" id="loading-status"><i class="status-dot"></i> ESTABLISHING CONNECTION TO THE DEEP</div>
   `;
   const $ = selector => app.querySelector(selector);
+  $('.header-tools').prepend($('#account-access'));
   const panelButtons = () => app.querySelectorAll('[data-panel]').forEach(button => { button.onclick = () => actions.openPanel(button.dataset.panel); });
   panelButtons();
   $('[data-explore]').onclick = () => { if (currentMode === 'menu') actions.start(); else actions.resume(); };
@@ -116,7 +118,7 @@ export function createUI(actions) {
   $('#slug-fu-button').onclick = () => actions.useSkill?.('slug-fu');
   document.addEventListener('keydown', event => {
     if (currentDialog && event.key === 'Tab') {
-      const focusable = [...$('#game-dialog').querySelectorAll('button,input,select,[tabindex="0"]')].filter(item => !item.disabled);
+      const focusable = [...$('#game-dialog').querySelectorAll('button,input,select,a[href],summary,[tabindex="0"]')].filter(item => !item.disabled && item.getClientRects().length);
       if (!focusable.length) return;
       const first = focusable[0], last = focusable[focusable.length - 1];
       if (event.shiftKey && document.activeElement === first) { last.focus(); event.preventDefault(); }
@@ -126,6 +128,11 @@ export function createUI(actions) {
   let lastLoadout = '', previousHealth = 100;
   function update(state) {
     currentState = state;
+    const account = state.account || { phase: 'local' };
+    const accountLabels = { checking: 'Checking account…', local: 'Device save', guest: 'Sign in to save', unavailable: 'Device save', ready: 'Account saves', pending: 'Save pending', saving: 'Saving…', saved: 'Cloud saved', offline: 'Saved on device', conflict: 'Choose a save', expired: 'Sign in again' };
+    $('#account-label').textContent = accountLabels[account.phase] || 'Saved progress';
+    if (!account.user && account.deviceSaved === false) $('#account-label').textContent = 'Save unavailable';
+    $('#account-access').dataset.status = account.phase;
     $('#view-toggle').setAttribute('aria-label', `Switch to ${state.viewMode === 'third-person' ? 'first' : 'third'}-person view (P)`);
     const health = state.health ?? 100, maxHealth = state.maxHealth ?? 100;
     $('#health-number').textContent = `${Math.ceil(health)} / ${maxHealth}`;
@@ -191,8 +198,8 @@ export function createUI(actions) {
       app.querySelectorAll('[data-slug]').forEach(button => { button.onclick = () => actions.selectSlug(Number(button.dataset.slug)); });
     }
     $('#loading-status').classList.add('loaded');
-    if (currentDialog && ['inventory', 'atlas', 'merchant', 'trainer', 'skills', 'expedition', 'map'].includes(currentDialog)) {
-      const signature = JSON.stringify([state.currentCavern, state.coins, state.ownedSlugs, state.equippedSlugs, state.ownedBlasters, state.equippedBlaster, state.skills, Math.ceil(state.skillCooldowns?.['slug-fu'] || 0), Math.ceil(state.skillCooldowns?.mastery || 0)]);
+    if (currentDialog && ['account', 'inventory', 'atlas', 'merchant', 'trainer', 'skills', 'expedition', 'map'].includes(currentDialog)) {
+      const signature = currentDialog === 'account' ? JSON.stringify(state.account) : JSON.stringify([state.currentCavern, state.coins, state.ownedSlugs, state.equippedSlugs, state.ownedBlasters, state.equippedBlaster, state.skills, Math.ceil(state.skillCooldowns?.['slug-fu'] || 0), Math.ceil(state.skillCooldowns?.mastery || 0)]);
       if (signature !== lastPanelSignature) showDialog(currentDialog, state, currentContext, true);
       lastPanelSignature = signature;
     }
@@ -227,6 +234,34 @@ export function createUI(actions) {
       $('#dialog-content').innerHTML = `${panelTitle('Small allies. <em>Wild power.</em>')}<p class="dialog-intro">Meet your Slugterra companions in both forms. Launch them as protoforms; at 100 mph (44.7 m/s) they transform into their powerful Velocimorph battle forms.</p><div class="morph-tabs" role="group" aria-label="Companion form"><button data-form-toggle="protoform" class="${inventoryMorphed ? '' : 'active'}" aria-pressed="${!inventoryMorphed}">Protoform <small>YOUR COMPANION</small></button><span class="morph-tab-arrow">→ 100 mph →</span><button data-form-toggle="velocimorph" class="${inventoryMorphed ? 'active' : ''}" aria-pressed="${inventoryMorphed}">Velocimorph <small>THE BATTLE FORM</small></button></div><div class="arsenal-grid ${inventoryMorphed ? 'show-velocimorph' : 'show-protoform'}">${slugs.map((slug, index) => `<button class="arsenal-card ${index === state.selectedSlug ? 'selected' : ''}" style="--slug-color:${esc(slug.color || '#83efdc')}" data-select="${index}" ${slug.unlocked === false ? 'disabled' : ''}><span class="card-index">${esc(slug.species || slug.element).toUpperCase()} / 0${index + 1}</span>${slugArt(slug, index + 10, inventoryMorphed)}<span class="element-tag">${esc(slug.element)} · ${inventoryMorphed ? 'VELOCIMORPH' : 'PROTOFORM'}</span><h3>${esc(slug.name)}</h3><p>${esc(slug.description)}</p><span class="slug-combat-stats"><span>${Math.round(slug.damage * (inventoryMorphed ? (slug.morphMultiplier || 1.6) : 1))} <small>DAMAGE</small></span><span>${inventoryMorphed ? `${slug.morphMultiplier || 1.6}×` : Math.round((slug.morphSpeed || 44.7) * 2.23694)} <small>${inventoryMorphed ? 'POWER' : 'mph MORPH'}</small></span></span><span class="card-action">${slug.unlocked === false ? 'CONTINUE YOUR QUEST TO UNLOCK' : index === state.selectedSlug ? 'EQUIPPED' : `EQUIP COMPANION ${icon('arrow')}`}</span></button>`).join('')}</div><p class="panel-footnote">A visible transformation happens in flight once a slug accelerates past 100 mph (44.7 m/s). Velocimorph hits deal 1.6× damage. Your slugs return after every shot.</p>`;
       app.querySelectorAll('[data-form-toggle]').forEach(button => { button.onclick = () => { inventoryMorphed = button.dataset.formToggle === 'velocimorph'; showDialog(kind, currentState); }; });
       app.querySelectorAll('[data-select]').forEach(button => { button.onclick = () => { actions.selectSlug(Number(button.dataset.select)); showDialog(kind, currentState); }; });
+    } else if (kind === 'account') {
+      const account = state.account || { phase: 'local' };
+      const signedIn = Boolean(account.user);
+      const localOnly = ['local', 'unavailable'].includes(account.phase);
+      const descriptions = {
+        saved: 'Your expedition is saved to your account. Sign in with the same account on another device to continue.',
+        ready: 'Your next expedition will save to your account automatically.',
+        pending: 'Your latest progress is saved on this device and waiting to sync.',
+        saving: 'Saving your expedition to your account…',
+        offline: 'Account storage is unavailable. Keep playing: your progress stays on this device. Retry when you are connected.',
+        conflict: 'Another device saved a newer expedition. Choose which journey to keep. Neither copy will be replaced until you choose.',
+        expired: 'Your signed-in account changed or your session ended. Your device backup is safe. Sign in again or reload to switch accounts.',
+      };
+      const summary = progress => `Level ${Number(progress?.level) || 1} · ${CAVERNS[progress?.currentCavern]?.name || 'The Luminous Deep'} · ${Number(progress?.kills) || 0} enemies defeated`;
+      $('#dialog-content').innerHTML = `${panelTitle('Your journey.<br><em>Everywhere.</em>')}<p class="dialog-intro">${signedIn ? esc(descriptions[account.phase] || 'Your progress is backed up on this device.') : account.phase === 'unavailable' ? 'The account service is temporarily unreachable. Your journey stays on this device. Reload to try sign-in again.' : localOnly ? 'This copy saves progress on this device. Open the online game to sign in and carry your expedition across devices.' : 'Sign in to carry your companions, equipment and cavern progress across devices. You can also keep playing as a guest on this device.'}</p>
+        ${account.deviceSaved === false ? '<p class="guide-note">This browser cannot store a device backup. Keep this tab open until your account save is up to date, or allow browser storage before leaving.</p>' : ''}
+        ${signedIn ? `<div class="guide-note account-identity"><strong>${esc(account.user.name)}</strong><span>${esc(account.phase === 'saved' ? 'CLOUD SAVE UP TO DATE' : account.deviceSaved === false ? 'DEVICE STORAGE UNAVAILABLE' : 'DEVICE BACKUP AVAILABLE')}</span></div>` : ''}
+        ${account.conflict ? `<div class="save-comparison"><article><small>THIS DEVICE</small><p>${esc(summary(state))}</p><button class="button-outline" id="keep-device-save">Keep this device's journey</button></article><article><small>ACCOUNT SAVE</small><p>${esc(summary(account.conflict.progress))}</p><button class="button-primary" id="use-cloud-save">Continue account journey</button></article></div>` : ''}
+        <div class="dialog-button-row">${(!signedIn || account.phase === 'expired') && !localOnly ? `${account.providers?.google ? '<a class="button-primary account-signin" href="/login/google" target="_top">Continue with Google ↗</a>' : '<button class="button-outline" disabled>Google sign-in unavailable</button>'}${account.providers?.microsoft ? '<a class="button-outline account-signin" href="/login/microsoft" target="_top">Continue with Microsoft ↗</a>' : '<button class="button-outline" disabled>Microsoft sign-in unavailable</button>'}` : ''}${signedIn && !account.conflict && account.phase !== 'expired' ? `<button class="button-primary" id="sync-progress" ${account.phase === 'saving' ? 'disabled' : ''}>${account.phase === 'offline' ? 'Retry sync' : 'Save now'}</button>` : ''}${['expired', 'unavailable'].includes(account.phase) ? '<a class="button-outline account-signout" href="/" target="_top">Reload account</a>' : ''}${signedIn ? '<form action="/login/signout" method="post" target="_top" class="account-signout-form"><button class="button-outline" type="submit">Sign out</button></form>' : ''}</div>
+        ${!signedIn && !localOnly ? '<p class="panel-footnote">Sign in directly with Google or Microsoft. Use the same provider and account on each device. Your provider password stays with that provider.</p>' : ''}
+        ${signedIn && account.guestAvailable && !account.conflict ? '<details class="account-guest-save"><summary>Bring in the guest journey from this device</summary><p>This replaces your current account journey with the guest save. The original guest save and a backup of your device copy are kept.</p><button class="button-outline" id="import-guest-save">Use this device’s guest journey</button></details>' : ''}
+        <p class="panel-footnote">Account saves include expedition progress and game settings. Imported audio stays on the device where you added it.</p>`;
+      $('#sync-progress')?.addEventListener('click', () => actions.syncProgress());
+      $('#use-cloud-save')?.addEventListener('click', () => actions.useCloudProgress());
+      $('#keep-device-save')?.addEventListener('click', () => actions.keepDeviceProgress());
+      $('#import-guest-save')?.addEventListener('click', () => actions.importGuestProgress());
+      app.querySelectorAll('.account-signin,.account-signout').forEach(link => link.addEventListener('click', () => actions.beforeAccountNavigation()));
+      $('.account-signout-form')?.addEventListener('submit', () => actions.beforeAccountNavigation());
     } else if (kind === 'journal') {
       const stages = ['Meet Ranger Kael at Haven Outpost', 'Recover three ancient heartshards', 'Defeat the corrupted Hollow Warden', 'Return the light to Haven Outpost'];
       const q = state.quest || {};
@@ -291,7 +326,7 @@ export function createUI(actions) {
       $('#restart-game').onclick = () => showDialog('restart', state);
       panelButtons();
     } else if (kind === 'restart') {
-      $('#dialog-content').innerHTML = `${panelTitle('A new <em>beginning.</em>')}<p class="dialog-intro">Starting a new expedition replaces your saved journey on this device. Your heartshards, experience, discoveries, equipment and expedition progress will be reset. Your imported audio clips stay on this device.</p><div class="dialog-button-row"><button class="button-primary" id="confirm-restart">Start new expedition ${icon('arrow')}</button><button class="button-outline" id="cancel-restart">Keep exploring</button></div>`;
+      $('#dialog-content').innerHTML = `${panelTitle('A new <em>beginning.</em>')}<p class="dialog-intro">Starting a new expedition replaces your saved journey on this device${state.account?.user ? ' and in your account when synchronized' : ''}. Your heartshards, experience, discoveries, equipment and expedition progress will be reset. Your imported audio clips stay on this device.</p><div class="dialog-button-row"><button class="button-primary" id="confirm-restart">Start new expedition ${icon('arrow')}</button><button class="button-outline" id="cancel-restart">Keep exploring</button></div>`;
       $('#confirm-restart').onclick = () => actions.restart();
       $('#cancel-restart').onclick = () => currentMode === 'menu' ? actions.closePanel() : showDialog('pause', state);
     } else if (kind === 'victory' || kind === 'won') {

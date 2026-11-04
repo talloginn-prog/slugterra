@@ -8,7 +8,7 @@ The environments and encounters are original playable designs informed by Slugte
 
 ## Run locally
 
-Requirements: Node.js **20.19+ or 22.12+** (Node 24 also works), npm, and a modern browser with WebGL 2. Hardware acceleration and a keyboard/mouse are recommended; touch controls are included.
+Requirements: Node.js **22.13+** (Node 24 also works), npm, and a modern browser with WebGL 2. Hardware acceleration and a keyboard/mouse are recommended; touch controls are included.
 
 ```sh
 cd /workspace/slugterra
@@ -16,7 +16,7 @@ npm ci
 npm run dev
 ```
 
-Open Vite's printed address, choose **Begin expedition**, and click the world to capture the cursor and unlock audio. Gameplay needs no backend, API keys or external asset downloads after installation. Host `dist/` with a static server to publish a build.
+Open Vite's printed address, choose **Begin expedition**, and click the world to capture the cursor and unlock audio. Gameplay needs no backend, API keys or external asset downloads after installation. Host `dist/` with a static server for device-local play; account saves require the hosted Worker build described below.
 
 ```sh
 npm test               # Rules, saves, input, audio, physics, display and assets
@@ -125,7 +125,7 @@ Use a browser-supported WAV, MP3, OGG, M4A or similar audio file, **at most 8 Mi
 
 All **ten supplied model ZIPs** remain unchanged in `src/assets/models/originals/`. Seven self-contained runtime GLBs provide Burpy, Joules, three blasters, Eli and a reusable shell. The blasters use inspected per-asset barrel direction and retain the calibrated gameplay muzzle. Procedural fallbacks remain available while imports load. Eli retains the supplied rig with procedural holding/walking motion; no authored animation clips were supplied. Model credits are available from the field guide. Shared geometry/materials survive scene replacement while owned skeleton bone textures are released. See [model import notes](docs/model-imports-2026-11-02.md).
 
-Campaign saves use `slugterra.campaign.v2`, preserving the original `slugterra.luminous-deep.v1` save as a migration recovery copy. Saves include progression, collection, equipped companions and blasters, skills, checkpoint, cavern positions and settings. A new journey resets campaign progress while keeping preferences and personal audio. Browser site data belongs to its origin and does not synchronize across devices.
+Campaign saves use `slugterra.campaign.v2`, preserving the original `slugterra.luminous-deep.v1` save as a migration recovery copy. Saves include progression, collection, equipped companions and blasters, skills, checkpoint, cavern positions and settings. A new journey resets campaign progress while keeping preferences and personal audio. Guest and portable saves belong to their browser origin. Signed-in online saves also synchronize with the account database, as described below.
 
 `npm run package:game` writes `.local/downloads/Slugterra.html`, `.local/downloads/Slugterra-The-Luminous-Deep.zip` and `START-HERE.txt`. The HTML embeds the production code, styles, reference artwork, runtime models and supplied MP3 for offline play. Python 3 is required only to create the ZIP. Extract and open the HTML in a WebGL 2 browser; if file-URL storage/rendering is restricted, serve the extracted folder with a local static server. Packaging does not publish a site or push GitHub changes.
 
@@ -138,6 +138,14 @@ Recovery points remain `backup/slugterra-rpg-development-2026-11-01` (recovered 
 This is a playable vertical slice with a complete quest and five connected regions. Full authored character animation, crafting, mounts, multiplayer and a long campaign remain future work. No Avatar models, textures or music are included.
 
 Special thanks to [Starkster on Sketchfab](https://sketchfab.com/parmaryash2599) for the Slugterra blaster and slug-shell 3D designs. Individual model authors and licenses remain listed in the in-game model credits.
+
+## Accounts and cross-device progress
+
+Open **Account and saved progress** in the header to sign in, check synchronization or bring a guest journey into your account. The online game supports **direct Google and Microsoft sign-in**, using Auth.js for OAuth/OpenID Connect and encrypted HttpOnly session cookies. Provider app credentials must be configured before a provider becomes available; see [the exact setup steps and callbacks](docs/direct-sign-in-setup.md). No ChatGPT account is required. Guest play and the downloadable game keep device-local saves. Imported audio remains on its original device.
+
+Online account saves use a server-side D1 record keyed by the authenticated provider and stable provider account ID. The game keeps a separate local backup for each account. Conflicting updates from another device require an explicit choice; a guest journey is imported only when selected. Displaced local copies are retained for recovery. Account changes stop syncing until the player signs in again or reloads.
+
+`npm run build` and `npm run package:game` retain the existing Vite/portable outputs. `npm run build:hosted` also produces the account API Worker and static asset directory. The tracked D1 schema and generated migrations are in `db/` and `drizzle/`. For local account QA, build the hosted output, apply `drizzle/0000_player_progress.sql` with Wrangler's **local** D1 command using `dist/server/wrangler.json`, then run `npm run test:accounts:browser`. Local QA uses encrypted fixture session cookies only on loopback. Protocol tests use mock Google/Microsoft token endpoints; production requires the real OAuth apps. Google and Microsoft identities are kept separate, even when they share an email address.
 
 ## Elemental combat and cartridge loading
 

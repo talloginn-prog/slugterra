@@ -3,3 +3,7 @@ dist/
 .local/
 test-results/
 *.log
+.wrangler/
+.sites-runtime/
+.env
+.env.*

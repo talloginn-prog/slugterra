@@ -20,13 +20,21 @@
     "test:expansion": "node tests/expansion-browser.cjs",
     "test:abilities": "node tests/abilities-browser.cjs",
     "test:touch": "node tests/touch-browser.cjs",
-    "test:elements": "node tests/elements-browser.cjs"
+    "test:elements": "node tests/elements-browser.cjs",
+    "build:hosted": "node scripts/build-hosted.mjs",
+    "db:generate": "drizzle-kit generate",
+    "test:accounts": "node --test tests/account-saves.test.js",
+    "test:accounts:browser": "node tests/accounts-browser.cjs"
   },
   "dependencies": {
+    "@auth/core": "^0.41.3",
+    "drizzle-orm": "^0.45.2",
     "three": "0.180.0"
   },
   "devDependencies": {
+    "drizzle-kit": "^0.31.10",
     "playwright": "1.56.1",
-    "vite": "7.1.12"
+    "vite": "7.1.12",
+    "wrangler": "^4.92.0"
   }
 }
