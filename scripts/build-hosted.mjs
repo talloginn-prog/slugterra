@@ -4,7 +4,8 @@ import { mkdir, cp, readFile, writeFile } from 'node:fs/promises';
 // Keep the Vite game and portable package intact; add a small server for account saves.
 await build();
 await mkdir('dist/client', { recursive: true });
-await cp('dist/index.html', 'dist/client/index.html');
+const gameHTML = await readFile('dist/index.html', 'utf8');
+await writeFile('dist/client/index.html', gameHTML.replace('</head>', '<meta name="slugterra-account-service" content="1"></head>'));
 await cp('dist/assets', 'dist/client/assets', { recursive: true });
 await build({ configFile: false, ssr: { noExternal: true }, build: { target: 'esnext', ssr: 'server/index.js', outDir: 'dist/server', emptyOutDir: true, rollupOptions: { output: { entryFileNames: 'index.js' } } } });
 const hosting = JSON.parse(await readFile('.openai/hosting.json', 'utf8'));

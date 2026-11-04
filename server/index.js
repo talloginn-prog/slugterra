@@ -12,7 +12,8 @@ export default {
     if (!env.ASSETS) return new Response('Game assets unavailable', { status: 503 });
     const asset = await env.ASSETS.fetch(request);
     if (asset.ok && request.method === 'GET' && ['/', '/index.html'].includes(url.pathname)) {
-      const html = (await asset.text()).replace('</head>', '<meta name="slugterra-account-service" content="1"></head>');
+      const source = await asset.text();
+      const html = source.includes('name="slugterra-account-service"') ? source : source.replace('</head>', '<meta name="slugterra-account-service" content="1"></head>');
       return new Response(html, { status: asset.status, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff' } });
     }
     return asset;
