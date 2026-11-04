@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { createBlasterModel } from '../src/models.js';
+import { registerImportedModels } from '../src/model-registry.js';
 import { alignImportedBlaster } from '../src/blaster-alignment.js';
 
 const assets = [
@@ -43,6 +45,14 @@ for (const asset of assets) test(`${asset.id} real uploaded barrel faces forward
   const size = new THREE.Box3().setFromObject(weapon).getSize(new THREE.Vector3());
   assert.ok(Math.abs(size.z - 0.72) < 1e-5, 'existing weapon scale is preserved');
   assert.deepEqual(weapon.userData.muzzle, { x: 0, y: 0.055, z: -0.553 });
+  registerImportedModels({ blaster: (_THREE, spec) => alignImportedBlaster(scene.clone(true), spec.id) });
+  try {
+    const gun = createBlasterModel(THREE, [{ id: 'ember', element: 'fire', color: '#ff8833' }]);gun.setWeapon({ id: asset.id });gun.group.updateMatrixWorld(true);
+    const loaded = gun.group.getObjectByName('Loaded companion inside cartridge'), chamberBox = new THREE.Box3().setFromObject(gun.group.getObjectByName(gun.group.userData.cartridge.node), true);
+    const loadedBox = new THREE.Box3().setFromObject(loaded, true);
+    assert.ok(chamberBox.containsBox(loadedBox), 'the loaded companion must fit inside the actual authored glass bounds');
+    assert.ok(loadedBox.getCenter(new THREE.Vector3()).distanceTo(chamberBox.getCenter(new THREE.Vector3())) < 1e-6);
+  } finally { registerImportedModels({}); }
   // A camera mount and the player-avatar hand both rotate this same -Z front.
   for (const [yaw, pitch] of [[0.45, 0.2], [Math.PI, 0], [-1.1, -0.35]]) {
     const mount = new THREE.Group(); mount.rotation.set(pitch, yaw, 0, 'YXZ'); mount.add(weapon); mount.updateMatrixWorld(true);

@@ -76,7 +76,7 @@ rotation and backgrounding. Phone, tablet and hybrid touch displays are supporte
 Right-click aim and left-click fire can be pressed in either order.
 Without pointer lock, right-drag turns without firing; left-drag also turns.
 E speaks/rests/collects/travels; 1/2/3 select your three equipped companions.
-Q scans; J journal; M map; I/Tab arsenal; R guided Slug Fu; K disciplines;
+Q scans; J journal; M map; V/I/Tab arsenal; R guided Slug Fu; K disciplines;
 Esc pauses/releases the cursor.
 
 EXPEDITION

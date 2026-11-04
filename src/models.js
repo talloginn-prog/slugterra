@@ -543,6 +543,8 @@ export function createBlasterModel(THREE, slugs = []) {
     const c=ring(screw,.075,.009,0,0,z,carousel);chamberEnds.push(c);
     for(let i=0;i<4;i++){const a=i/4*Math.PI*2;box(glow,[Math.cos(a)*.071,Math.sin(a)*.071,z],[.012,.012,.02],undefined,carousel);}
   }
+  const cartridgeGlass = new THREE.Mesh(new THREE.CylinderGeometry(.069, .069, .16, 20, 1, true), new THREE.MeshPhysicalMaterial({ color: 0x9ae5ec, transparent: true, opacity: .14, depthWrite: false, side: THREE.DoubleSide, roughness: .15 }));
+  cartridgeGlass.rotation.x = Math.PI / 2; carousel.add(cartridgeGlass);
   let companion = null, selected = -1, selectedIdentity = null, time = 0;
   const equipment = new THREE.Group(); equipment.name = 'Equipment tuning'; group.add(equipment);
   let weaponIdentity = null, lastWeaponSpec = null, uploadedWeapon = null;
@@ -563,8 +565,12 @@ export function createBlasterModel(THREE, slugs = []) {
     if (companion) { carousel.remove(companion); disposeMeshes(companion); companion = null; }
     selected = next; selectedIdentity = identity;
     if (slug) {
-      companion = createSlugModel(THREE, slug, { scale: .148 });
-      companion.position.set(0, -.071, .005); companion.rotation.y = 2.6; carousel.add(companion);
+      companion = createSlugModel(THREE, slug, { scale: 1 });
+      companion.rotation.x = -Math.PI / 2; companion.updateMatrixWorld(true);
+      const bounds = new THREE.Box3().setFromObject(companion, true), size = bounds.getSize(new THREE.Vector3()), center = bounds.getCenter(new THREE.Vector3());
+      const fit = Math.min(.105 / size.x, .105 / size.y, .13 / size.z);
+      companion.scale.multiplyScalar(fit); companion.position.copy(center).multiplyScalar(-fit); carousel.add(companion);
+      companion.name = 'Loaded companion inside cartridge';
     }
     const color = new THREE.Color(slug?.color || 0xffb85f); glow.color.copy(color); glow.emissive.copy(color);
     group.userData.loadedSlugId = slug?.id ?? null;
@@ -610,6 +616,14 @@ export function createBlasterModel(THREE, slugs = []) {
     if (uploadedWeapon) { group.remove(uploadedWeapon); uploadedWeapon = null; }
     uploadedWeapon = createImportedBlaster(THREE, value);
     for (const child of group.children) child.visible = !uploadedWeapon || child === carousel;
+    carousel.position.set(0, .115, .065); carousel.scale.setScalar(1);
+    const cartridge = uploadedWeapon?.userData.cartridge;
+    if (cartridge) {
+      carousel.position.fromArray(cartridge.center);
+      carousel.scale.set(Math.max(.001, cartridge.size[0] / .17), Math.max(.001, cartridge.size[1] / .17), Math.max(.001, cartridge.size[2] / .18));
+      const housing = uploadedWeapon.getObjectByName(cartridge.node); if (housing) housing.visible = false;
+    }
+    group.userData.cartridge = cartridge || { center: [0,.115,.065] };
     if (uploadedWeapon) { group.add(uploadedWeapon); group.userData.importedWeapon = true; }
     else group.userData.importedWeapon = false;
   }
@@ -624,7 +638,9 @@ export function createBlasterModel(THREE, slugs = []) {
     update(dt,{recoil=0,aiming=false,cooldown=0}={}){
       time+=Math.min(.1,Math.max(0,Number(dt)||0));
       // A little chamber indexing and charging glow show the action inside the housing.
-      carousel.rotation.z=THREE.MathUtils.lerp(carousel.rotation.z,Math.min(1,Math.max(0,cooldown))*.33,Math.min(1,dt*9));
+      carousel.rotation.z = 0;
+      if (companion) companion.visible = !slugs[selected]?.inFlight;
+      group.userData.loadedSlugVisible = Boolean(companion?.visible);
       chamberEnds.forEach((ring,i)=>{ring.rotation.z=time*.2*(i?1:-1);});
       glass.material.opacity=aiming?.2:.26;
       glow.emissiveIntensity=1.05+Math.min(1,Math.max(0,recoil))*.9+Math.min(1,Math.max(0,cooldown))*.45;

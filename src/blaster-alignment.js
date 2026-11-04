@@ -31,5 +31,11 @@ export function alignImportedBlaster(scene, id) {
   group.updateMatrixWorld(true);
   group.name = `Uploaded ${id} blaster`; group.userData.importedModelId = id;
   group.userData.muzzle = { x: 0, y: 0.055, z: -0.553 };
+  const chamberName = { standard: 'Object_47', breaker: 'Object_34', rapid: 'Object_37' }[id];
+  const chamber = scene.getObjectByName(chamberName);
+  if (chamber) {
+    const bounds = new THREE.Box3().setFromObject(chamber), center = bounds.getCenter(new THREE.Vector3()), size = bounds.getSize(new THREE.Vector3());
+    group.userData.cartridge = { center: center.toArray(), size: size.toArray(), node: chamberName };
+  }
   return group;
 }

@@ -53,7 +53,7 @@ Browser suites use Playwright and system Chromium at `/usr/bin/chromium`; set `C
 | **R** | Guided Flight after learning Slug Fu |
 | **K** | Disciplines and skill recovery |
 | **J** / **M** | Field journal / region map |
-| **I** / **Tab** | Arsenal, companion slots and both form illustrations |
+| **V** / **I** / **Tab** | Arsenal, companion slots and both form illustrations |
 | **Esc** | Pause, release the cursor or close a panel |
 
 Aim and fire work in either button order. Without pointer lock, hold right mouse and drag to turn without firing; left-drag also turns. The HUD supplies touch controls and a view-switch button. The atlas shows cavern connections; the collection equips discovered companions into three slots. Starting a new journey requires confirmation because it replaces saved game progress.
@@ -138,3 +138,7 @@ Recovery points remain `backup/slugterra-rpg-development-2026-11-01` (recovered 
 This is a playable vertical slice with a complete quest and five connected regions. Full authored character animation, crafting, mounts, multiplayer and a long campaign remain future work. No Avatar models, textures or music are included.
 
 Special thanks to [Starkster on Sketchfab](https://sketchfab.com/parmaryash2599) for the Slugterra blaster and slug-shell 3D designs. Individual model authors and licenses remain listed in the in-game model credits.
+
+## Elemental combat and cartridge loading
+
+Press **V** to open the slug arsenal; I and Tab remain aliases. Infurnus fire burns for three seconds (4 damage/second), Boon Doc heals with green pulses, Rammstone strikes with a stone fist/shockwave and knockback, Frostcrawler encases enemies in ice for 2.2 seconds, AquaBeek splashes water and extinguishes burning targets, and Joules creates electrical arcs and stun. These durations and values are original RPG balance. Loaded companions lie inside the actual glass cartridge on each blaster, in both camera views, and leave it while in flight.

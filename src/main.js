@@ -20,6 +20,7 @@ import { prepareImportedModels, getImportedModelStatus, createImportedCharacter,
 import { registerImportedModels } from './model-registry.js';
 import { createViewController } from './camera-view.js';
 import { calculateDisplay } from './display.js';
+import { createSlugEffects } from './slug-effects.js';
 import './style.css';
 
 const canvas = document.querySelector('#game-canvas');
@@ -49,6 +50,7 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.shadowMap.autoUpdate = false;
 renderer.shadowMap.needsUpdate = true;
 const scene = new THREE.Scene();
+const slugEffects = createSlugEffects(THREE, scene);
 scene.background = new THREE.Color(0x102e36);
 scene.fog = new THREE.FogExp2(0x102e36, 0.0085);
 const camera = new THREE.PerspectiveCamera(65, display.aspect, 0.08, 260);
@@ -238,7 +240,7 @@ const launcher = blaster.group;
 camera.add(launcher); scene.add(camera);
 launcher.position.set(0.3, -0.3, -0.64);
 launcher.scale.setScalar(0.8); launcher.visible = false;
-let playerAvatar = null, avatarWeapon = null, avatarWeaponId = null, avatarMotion = [];
+let playerAvatar = null, avatarWeapon = null, avatarBlaster = null, avatarWeaponId = null, avatarMotion = [];
 function refreshPlayerAvatar() {
   if (playerAvatar) { scene.remove(playerAvatar); disposeObject(playerAvatar); }
   playerAvatar = createImportedCharacter(THREE, { height: 1.85 }) || new THREE.Group();
@@ -267,9 +269,10 @@ function refreshPlayerAvatar() {
 function refreshAvatarWeapon() {
   if (!playerAvatar) return;
   const id = game.state.equippedBlaster;
-  if (avatarWeapon && avatarWeaponId === id) return;
+  if (avatarWeapon && avatarWeaponId === id) { avatarBlaster.setRoster(game.state.slugs); avatarBlaster.setSlug(game.state.selectedSlug); return; }
   if (avatarWeapon) { playerAvatar.remove(avatarWeapon); disposeObject(avatarWeapon); }
-  avatarWeapon = createImportedBlaster(THREE, { id }); avatarWeaponId = id;
+  avatarBlaster = createBlasterModel(THREE, game.state.slugs); avatarBlaster.setWeapon({ id }); avatarBlaster.setSlug(game.state.selectedSlug);
+  avatarWeapon = avatarBlaster.group; avatarWeaponId = id;
   if (avatarWeapon) { avatarWeapon.position.set(0.30, 1.2, -0.23); playerAvatar.add(avatarWeapon); }
 }
 function updatePlayerAvatar() {
@@ -278,7 +281,7 @@ function updatePlayerAvatar() {
   playerAvatar.visible = view.thirdPerson && mode !== 'menu' && camera.position.distanceTo(player) > 0.65;
   const speed = Math.hypot(character.velocity.x, character.velocity.z), stride = character.grounded ? Math.min(1, speed / 6.5) : 0;
   for (const joint of avatarMotion) { joint.bone.quaternion.copy(joint.rest); joint.bone.rotateX(joint.knee ? Math.max(0, Math.sin(elapsed * 9 * joint.side)) * stride * 0.3 : Math.sin(elapsed * 9) * joint.side * stride * 0.28); }
-  if (avatarWeapon) avatarWeapon.rotation.x = pitch * 0.8 + recoil * 0.08;
+  if (avatarWeapon) { avatarWeapon.rotation.x = pitch * 0.8 + recoil * 0.08; avatarBlaster.update(0, { cooldown: game.state.slugs[game.state.selectedSlug]?.cooldown || 0 }); }
 }
 function placeCamera() {
   const at = view.cameraPosition(player, yaw, pitch, (a, b) => {
@@ -301,6 +304,12 @@ function muzzlePosition() {
     return player.clone().add(new THREE.Vector3(Math.cos(yaw) * 0.3, -0.5, -Math.sin(yaw) * 0.3));
   }
   launcher.updateWorldMatrix(true, false); return launcher.localToWorld(blaster.muzzle.clone());
+}
+function cartridgePosition() {
+  if (view.thirdPerson) updatePlayerAvatar();
+  const gun = view.thirdPerson && avatarWeapon ? avatarWeapon : launcher;
+  gun.updateWorldMatrix(true, false);
+  return gun.localToWorld(new THREE.Vector3().fromArray(gun.userData.cartridge?.center || [0, .115, .065]));
 }
 function refreshWeapon() {
   blaster.setRoster?.(game.state.slugs);
@@ -330,6 +339,7 @@ function disposeObject(root) {
   });
 }
 function clearProjectiles() {
+  slugEffects.clear();
   for (const p of projectiles) { audio.cancelShot(p.audioShot); scene.remove(p.mesh, p.trail); disposeObject(p.mesh); disposeObject(p.trail); }
   projectiles.length = 0;
   game.state.slugs.forEach(s => { s.inFlight = false; });
@@ -580,6 +590,7 @@ function createProjectile(position, direction, slug, hostile = false) {
   scene.add(trail);
   const speed = hostile ? slug.speed : 18;
   const p = { mesh, proto, morph, trail, slug, serial: ++shotSerial, velocity: direction.clone().multiplyScalar(speed), speed, damage: slug.damage, element: slug.element, color: slug.color, hostile, life: hostile ? 4 : 2.8, flightTime: 0, phase: 'protoform', morphed: false, morphAge: 0, radius: hostile ? 0.18 : 0.12 };
+  if (!hostile) slugEffects.projectile(p);
   projectiles.push(p);
   if (!hostile) { game.state.slugs.find(s => s.id === slug.id).inFlight = true; combatStats.shots++; }
   return p;
@@ -587,6 +598,7 @@ function createProjectile(position, direction, slug, hostile = false) {
 function returnSlug(p) {
   audio.cancelShot(p.audioShot);
   if (p.hostile) { p.life = 0; return; }
+  if (p.elementEffect) p.elementEffect.visible = false;
   p.phase = 'returning'; p.life = 8; p.speed = 40; p.proto.visible = true; p.morph.visible = false;
   p.proto.scale.setScalar(0.28); p.mesh.scale.setScalar(1);
 }
@@ -623,12 +635,18 @@ function shoot() {
   forward.subVectors(destination, start).normalize();
   const audioShot = audio.shoot(audioElement(slug.element));
   const projectile = createProjectile(start, forward, slug); projectile.audioShot = audioShot;
+  blaster.update(0); avatarBlaster?.update(0);
   projectile.firedAt = elapsed; recoil = 1;
+  if (['healing','water'].includes(slug.element)) slugEffects.emit(slug.element, player.clone().add(new THREE.Vector3(0,-.8,0)), .8);
   spawnBurst(start.clone().add(forward.clone().multiplyScalar(0.5)), slug.color, 5);
 }
 function damageEnemy(enemy, projectile) {
   enemy.hp -= projectile.damage * (projectile.morphed ? (projectile.slug.morphMultiplier || 1.6) : 1);
   combatStats.hits++;
+  slugEffects.emit(projectile.element, projectile.mesh.position);
+  if (projectile.element === 'fire') enemy.burning = 3;
+  if (projectile.element === 'ice') { enemy.frozen = 2.2; enemy.burning = 0; }
+  if (projectile.element === 'water') enemy.burning = 0;
   enemy.stagger = projectile.element === 'earth' ? (projectile.slug.staggerDuration || 1.2) : projectile.element === 'ice' ? 1.8 : projectile.element === 'light' ? 0.9 : projectile.element === 'electric' ? 0.75 : 0.18;
   if (projectile.element === 'web') {
     enemy.rooted = projectile.slug.rootDuration || 2.6;
@@ -652,13 +670,16 @@ function damageEnemy(enemy, projectile) {
   audio.impact(audioElement(projectile.element));
   spawnBurst(projectile.mesh.position, projectile.color, 12);
   ui.hit?.();
-  if (enemy.hp <= 0) {
-    enemy.dead = true; scene.remove(enemy.root);
-    spawnBurst(enemy.root.position, '#f7b1e8', enemy.boss ? 65 : 25);
-    game.addKill({ boss: enemy.boss, encounterId: enemy.encounterId }); game.save(player);
-    if (enemy.boss) audio.collect();
-  }
+  finishEnemy(enemy);
 }
+function finishEnemy(enemy) {
+  if (enemy.hp > 0 || enemy.dead) return;
+  enemy.dead = true; scene.remove(enemy.root);
+  spawnBurst(enemy.root.position, '#f7b1e8', enemy.boss ? 65 : 25);
+  game.addKill({ boss: enemy.boss, encounterId: enemy.encounterId }); game.save(player);
+  if (enemy.boss) audio.collect();
+}
+
 function hurt(amount) {
   const event = game.damage(amount); audio.hurt();
   damageFlash.classList.remove('active'); void damageFlash.offsetWidth; damageFlash.classList.add('active');
@@ -679,9 +700,10 @@ function updateProjectiles(dt) {
     const previous = p.mesh.position.clone();
     if (p.phase === 'returning') {
       launcher.updateWorldMatrix(true, false);
-      const home = view.thirdPerson ? muzzlePosition() : launcher.localToWorld(new THREE.Vector3(0, 0.02, 0.03));
+      const home = cartridgePosition();
       const offset = home.sub(p.mesh.position), distance = offset.length();
       if (distance <= dt * 40 + 0.25 || p.life <= 0) { removeProjectile(i); continue; }
+      p.mesh.scale.setScalar(Math.min(1, Math.max(.15, distance / .65)));
       p.velocity.copy(offset).normalize().multiplyScalar(40);
       p.mesh.position.addScaledVector(p.velocity, dt);
       p.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, -1), p.velocity.clone().normalize());
@@ -730,6 +752,7 @@ function updateProjectiles(dt) {
         else {
           combatStats[hit.kind === 'terrain' ? 'terrainHits' : 'obstacleHits']++;
           if (!p.hostile) audio.impact(audioElement(p.element));
+          if (!p.hostile) slugEffects.emit(p.element, p.mesh.position, .7);
           spawnBurst(p.mesh.position, p.color, 8);
         }
         if (p.hostile) { removeProjectile(i); continue; }
@@ -739,6 +762,7 @@ function updateProjectiles(dt) {
         returnSlug(p);
       }
     }
+    if (p.elementEffect?.visible) { p.elementEffect.rotation.z = elapsed * 6; p.elementEffect.scale.setScalar(p.morphed ? 1.5 : 1); }
     const tail = p.mesh.position.clone().addScaledVector(p.velocity.clone().normalize(), p.phase === 'returning' ? -0.5 : -1.6);
     const attr = p.trail.geometry.attributes.position;
     attr.setXYZ(0, tail.x, tail.y, tail.z); attr.setXYZ(1, p.mesh.position.x, p.mesh.position.y, p.mesh.position.z);
@@ -754,7 +778,7 @@ function visibleBetween(start, end) {
   return !colliders.some(c => segmentCapsuleHit(start, end, { x: c.x, y: (c.bottom + c.top) / 2, z: c.z }, c.radius + 0.08, Math.max(0, (c.top - c.bottom) / 2)) !== null);
 }
 function moveEnemy(enemy, intent, dt) {
-  if (enemy.rooted > 0) { enemy.speed = 0; return; }
+  if (enemy.rooted > 0 || enemy.frozen > 0) { enemy.speed = 0; return; }
   const speed = (enemy.boss ? 2.5 : 3) * intent.speedMultiplier;
   const original = enemy.root.position.clone();
   const eyeHeight = enemy.height - .12, radius = enemy.radius * .8;
@@ -784,7 +808,10 @@ function updateEnemies(dt) {
   for (let i = 0; i < enemies.length; i++) {
     const e = enemies[i]; if (e.dead) continue;
     const distance = player.distanceTo(e.root.position);
-    e.stagger = Math.max(0, e.stagger - dt);
+    e.frozen = Math.max(0, (e.frozen || 0) - dt);
+    if (e.burning > 0) { const burnTime = Math.min(dt, e.burning); e.burning -= burnTime; e.hp -= 4 * burnTime; finishEnemy(e); if (e.dead) continue; }
+    slugEffects.enemy(e, elapsed);
+    e.stagger = Math.max(e.frozen, e.stagger - dt, 0);
     e.rooted = Math.max(0, (e.rooted || 0) - dt);
     if (e.webEffect) e.webEffect.visible = e.rooted > 0;
     if (!e.nextSight || elapsed >= e.nextSight) {
@@ -919,7 +946,7 @@ game.subscribe((state, event) => {
   ui.update(state);
 });
 document.addEventListener('keydown', event => {
-  if (event.target.matches('input,select,textarea') || event.repeat && ['e', 'escape', 'q', 'c', 'r', 'k', 'p'].includes(event.key.toLowerCase())) return;
+  if (event.target.matches('input,select,textarea') || event.repeat && ['e', 'escape', 'q', 'c', 'r', 'k', 'p', 'v'].includes(event.key.toLowerCase())) return;
   const key = event.key.toLowerCase();
   if (mode === 'playing') {
     keys.add(key);
@@ -935,7 +962,7 @@ document.addEventListener('keydown', event => {
     if (['1', '2', '3'].includes(key)) { game.selectSlug(Number(key) - 1); refreshWeapon(); }
     if (key === 'j') openPanel('journal');
     if (key === 'm') openPanel('map');
-    if (key === 'tab' || key === 'i') { event.preventDefault(); openPanel('inventory'); }
+    if (key === 'tab' || key === 'i' || key === 'v') { event.preventDefault(); openPanel('inventory'); }
   }
   if (key === 'escape') {
     if (panelOpen) closePanel(); else if (mode === 'playing') openPanel('pause');
@@ -1001,6 +1028,7 @@ function frame() {
       game.tick(simulationStep); movePlayer(simulationStep); updateEnemies(simulationStep); updateProjectiles(simulationStep);
       simulationRemainder -= simulationStep;
     }
+    slugEffects.update(dt);
     updateView(dt); updateInteractions();
     lastSave += dt; if (lastSave > 8) { game.save(player); lastSave = 0; }
   }
@@ -1041,6 +1069,7 @@ if (import.meta.env.DEV) {
     game, player, enemies, camera, renderer, character, projectiles, combatStats, audio, launcher, blaster, mouse, colliders,
     get world() { return world; },
     get display() { return { ...display }; },
+    get effects() { return slugEffects; },
     get touchInput() { return { x: touchControls.x, z: touchControls.z, firing: touchControls.firing, aiming: touchControls.aiming, sprinting: touchControls.sprinting }; },
     get viewMode() { return view.mode; },
     get playerAvatar() { return playerAvatar; },

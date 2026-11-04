@@ -63,3 +63,13 @@ Held input and pointer captures reset on pause, cavern changes, backgrounding, c
 | `npm run test:portable` | Passed: offline WebGL, real joystick gesture/release and touch view switching, collection/atlas, all embedded assets unchanged and no HTTP requests |
 
 Touch browser checks use Chromium's emulated touch device and real WebGL. Physical iOS/Android hardware has not been exercised in this cloud environment. Screenshots remain under ignored `test-results/`; the portable guide includes touchscreen instructions.
+
+## Arsenal shortcut, cartridge fit and elemental effects
+
+This continuation preserves `0f1e53b` with tag `backup/pre-slug-effects-0f1e53b`. **V** opens the arsenal while I/Tab remain available; input fields ignore the shortcut and held V does not repeatedly reopen the panel.
+
+Loaded companions are rotated lengthwise, centered and scaled inside the actual glass mesh of each uploaded blaster. The obsolete floating display location is replaced by per-model cartridge anchors. First- and third-person guns share the same loading controller. The cartridge empties when its companion launches and refills on return, including when switching views.
+
+Infurnus emits flames and burns targets for three seconds at 4 damage/second. Boon Doc retains its healing and adds green healing pulses/crosses. Rammstone has stone-fist artwork and a shockwave alongside its collision-constrained knockback. Frostcrawler encases targets in ice and stops movement/attacks for 2.2 seconds. AquaBeek creates water rings/splashes and extinguishes burning targets. Joules has electrical arcs and stun. These timers and values are original RPG tuning. Temporary particles are capped, expire and dispose their owned resources; scene changes clear active impacts. Existing audio and source models are retained.
+
+Validation: 101 unit tests pass, including all nine companion cartridge fits, actual uploaded glass bounds for all three guns, flight visibility, six distinct elemental visual signatures, effect disposal and status overlays. Real input/projectile browser checks pass for all six companions, healing, burn/freeze overlays, V, and both camera views. Camera and existing web/support/ram ability regressions pass. Native multi-touch and offline production checks pass; camera and offline checks were repeated after routing returning companions to the cartridge. The portable build retains all 18 reference images, seven runtime models and the supplied MP3 unchanged (22,434,607-byte HTML; 11,838,866-byte ZIP).
